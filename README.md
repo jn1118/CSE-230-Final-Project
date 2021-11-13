@@ -3,9 +3,9 @@
 Proposal for CSE230 final project
 
 Collaborators: 
-Yiyan Chen, A16186093, github: YiyanChen; 
-Qipeng Xu, A59011253, github: QipengXu;
-Jiangnan Xu, A14534652, github: jn1118
+- Yiyan Chen, A16186093, github: YiyanChen; 
+- Qipeng Xu, A59011253, github: QipengXu;
+- Jiangnan Xu, A14534652, github: jn1118
 
 We are going to build up a Gomoku game using Haskell, which is going to be displayed on the terminal and allow two users to play simultaneously. 
 
