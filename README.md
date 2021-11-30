@@ -26,3 +26,18 @@ Further functionalities we are going to implement:
 3. Undo the table to the last status (ask for two players’ confirmation)
 
 Library we are going to use: Brick
+
+# Milestone 2
+
+1. application architecture (the key components):
+The application consists of 3 main components:IO component, game component, UI component.
+- IO component: responsible for loading files and save files
+- Game component: including some data types (e.g. stone,cell, board) and some logic functions (e.g. moveStone, putStone, checkWinner, giveHint …) 
+- UI component: responsible for rendering user interface(using brick).
+
+2. Challenges met so far and solutions:
+The group members are not familiar enough with Haskell, so it is difficult to get started with brick. Therefore, we start with the user guide of brick and a youtube video tutorial to help our group get familiar with brick.
+As the end of the quarter approaches, the team members’ schedule is very tight. Therefore everyone needs to have a clear timeline for completing their tasks to ensure progress.
+
+3. Do we expect to meet our goals until the deadline?
+Not sure. If the time not allowed, we may give up the “undo” functionality.
