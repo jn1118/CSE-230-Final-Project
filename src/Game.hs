@@ -27,7 +27,10 @@ data Cell
   = Given Int
   | Input Int
   | Note [Int]
-  | Empty
+  | Empty 
+  | Hide Int
+  | Active Int
+  | Flag Int
   deriving (Eq, Read, Show)
 
 type Row = [Cell]
@@ -37,7 +40,10 @@ type Grid = [Row]
 data Game = Game
   { cursor :: (Int, Int)
   , grid :: Grid
-  , previous :: Maybe Game
+  , length :: Int
+  , width :: Int
+  , hardness :: Hardness
+  , previous :: Maybe Game -- TODO: delete
   } deriving (Read, Show)
 
 data Direction
@@ -47,14 +53,28 @@ data Direction
   | West
   deriving (Read, Show)
 
-mkGame :: [Int] -> Game
-mkGame xs = Game
+-- mkGame :: [Int] -> Game
+-- mkGame xs = Game
+--   { cursor = (4, 4)
+--   , grid = chunksOf 9 $ mkCell <$> xs
+--   , previous = Nothing
+--   }
+--   where mkCell 0 = Empty
+--         mkCell n = Given n
+
+data Hardness
+  = Simple -- 8
+  | Intermediate -- 16
+  | Hard -- 20
+
+mkGame :: xs -> Game
+mkGame hardness = Game
   { cursor = (4, 4)
   , grid = chunksOf 9 $ mkCell <$> xs
   , previous = Nothing
   }
-  where mkCell 0 = Empty
-        mkCell n = Given n
+  where 
+    mkCell n = Hide n
 
 moveCursor :: Direction -> Int -> Game -> Game
 moveCursor direction distance game =
@@ -142,3 +162,4 @@ getRegion number game =
 
 getRegionsFlat :: Game -> [[Cell]]
 getRegionsFlat game = [concat $ getRegion x game | x <- [0..8]]
+
