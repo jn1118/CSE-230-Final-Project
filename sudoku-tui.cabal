@@ -1,12 +1,12 @@
-name:                sudoku-tui
+name:                mine-sweeper
 version:             0.1.0.0
-synopsis:            Command-line sudoku game
-homepage:            https://github.com/evanrelf/sudoku-tui
+synopsis:            Command-line mine sweeper game
+homepage:            https://github.com/jn1118/CSE-230-Final-Project
 license:             MIT
 license-file:        LICENSE
-author:              Evan Relf <evan@evanrelf.com>
-maintainer:          Evan Relf <evan@evanrelf.com>
-copyright:           2018 Evan Relf
+author:              
+maintainer:          
+copyright:           
 category:            Game
 build-type:          Simple
 cabal-version:       >=1.10
