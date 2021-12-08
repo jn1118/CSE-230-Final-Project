@@ -115,23 +115,19 @@ handleEvent game (VtyEvent (V.EvKey key [])) =
 handleEvent game _ = continue game
 
 -- highlight the chosen cell
-highlightCursor :: Game -> [[[[Widget ()]]]] -> [[[[Widget ()]]]]
+highlightCursor :: Game -> [[Widget ()]] -> [[Widget ()]]
 highlightCursor game widgets =
-  widgets & ix bigRow
-          . ix bigCol
-          . ix smallRow
-          . ix smallCol
+  widgets & ix x
+          . ix y
           %~ withDefAttr styleCursor
   where (x, y) = cursor game
-        bigRow   = y `div` 3
-        bigCol   = x `div` 3
-        smallRow = y `mod` 3
-        smallCol = x `mod` 3
+
 
 drawCell :: Cell -> Widget ()
 drawCell cell = center $ case cell of
-  -- Hiden x -> withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
-  -- Active x -> 
+  Hide x -> withAttr styleCellGiven . str $ show x --withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
+  Active x -> withAttr styleCellGiven . str $ show x
+  Flag x -> withAttr styleCellGiven . str $ show x
   Given x -> withAttr styleCellGiven . str $ show x
   Input x  -> withAttr styleCellInput . str $ show x
   Note xs -> fmap str xs'
@@ -145,16 +141,12 @@ drawCell cell = center $ case cell of
 
 drawGrid :: Game -> Widget ()
 drawGrid game =
-  fmap (`getRegion` game) [0..8]
-  & chunksOf 3
-  & fmap (fmap (fmap (fmap drawCell))) --  'cause the status is 4D
-  & highlightCursor game
-  & fmap (fmap (fmap (intersperse (withBorderStyle unicode vBorder))))
-  & fmap (fmap (fmap hBox))
-  & fmap (fmap (intersperse (withBorderStyle unicode (hBorderWithLabel (str "┼───────┼")))))
-  & fmap (fmap vBox)
-  & fmap (intersperse (withBorderStyle unicodeBold vBorder))
-  & fmap hBox
+  grid game
+  & fmap (fmap (drawCell)) -- render Cell
+  & highlightCursor game -- 显示被选择的位置
+  & fmap ((intersperse (withBorderStyle unicode vBorder)))
+  & fmap (hBox) -- [Widget]
+  & intersperse (withBorderStyle unicode (hBorderWithLabel (str "┼───────┼")))
   & intersperse (withBorderStyle unicodeBold (hBorderWithLabel (str "╋━━━━━━━━━━━━━━━━━━━━━━━╋")))
   & vBox
   & border
@@ -183,8 +175,7 @@ drawHelp =
 drawDebug :: Game -> Widget ()
 drawDebug game =
   [ "cursor:    (" <> show x <> ", " <> show y <> ")"
-  , "progress:  " <> show (gameProgress game) <> "%"
-  , "solved:    " <> show (gameSolved game)
+  , "progress:  "  <> show (grid  game)
   ]
   & unlines
   & str
@@ -192,7 +183,7 @@ drawDebug game =
   & padLeftRight 1
   & borderWithLabel (str " Debug ")
   & withBorderStyle unicodeRounded
-  & hLimit 31
+  -- & hLimit 31
   where (x, y) = cursor game
 
 drawSolved :: Game -> Widget ()
