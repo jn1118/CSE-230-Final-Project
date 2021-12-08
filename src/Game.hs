@@ -72,7 +72,7 @@ data Hardness
 
 mkGame :: [Int] -> Game
 mkGame xs = Game
-  { cursor = (1, 1)
+  { cursor = (0, 2)
   , grid = chunksOf 9 $ mkCell <$> xs
   , leng = 9
   , width = 9
@@ -83,6 +83,20 @@ mkGame xs = Game
   where
     mkCell n = Hide n
 
+-- moveCursor :: Direction -> Int -> Game -> Game
+-- moveCursor direction distance game =
+--   (\c -> game { cursor = c }) $ case direction of
+--     North -> (x, wrap (y - distance))
+--     South -> (x, wrap (y + distance))
+--     East  -> (wrap (x + distance), y)
+--     West  -> (wrap (x - distance), y)
+--   where
+--     (x, y) = cursor game
+--     wrap n
+--       | n >= 9    = n - 9 -- TODO: n >= game.hardness
+--       | n < 0     = n + 9
+--       | otherwise = n
+
 moveCursor :: Direction -> Int -> Game -> Game
 moveCursor direction distance game =
   (\c -> game { cursor = c }) $ case direction of
@@ -92,9 +106,10 @@ moveCursor direction distance game =
     West  -> (wrap (x - distance), y)
   where
     (x, y) = cursor game
+    h      = hardness game
     wrap n
-      | n >= 9    = n - 9 -- TODO: n >= game.hardness
-      | n < 0     = n + 9
+      | n >= h    = n - h -- TODO: n >= game.hardness
+      | n < 0     = n + h
       | otherwise = n
 
 transformCell :: (Cell -> Cell) -> Game -> Game
@@ -117,16 +132,39 @@ toggleNoteCell number = transformCell $ \case
     | otherwise        -> Note (number : ns)
   _       -> Note [number]
 
-clickCell :: Game -> Game
-clickCell = transformCell $ \case
-  Hide n -> Active n
-  c      -> c
+-- clickCell :: Game -> Game
+-- clickCell  = transformCell $ \case
+--   Hide (-1) -> Empty
+--   Hide n -> Active n
+--   c      -> c
   -- TODO click mine -> end game
   -- TODO click zero -> BFS
+
+transformCell' :: (Cell -> Cell) -> Game -> Int -> Int -> Game
+transformCell' f game x y = game { grid = grid game & ix x . ix y %~ f }
+
+-- x, y must be the cursor index
+clickCell ::Int -> Int -> Game -> Game
+clickCell (-1) _ game = game
+clickCell 9 _ game = game
+clickCell _ (-1) game = game
+clickCell _ 9 game = game
+clickCell x y game = case cell of
+  -- make (x, y) Active 0, clickCell (x+1, y),(x-1, y), (x, y+1), (x, y-1)
+  -- Hide 0    -> clickCell x (max (y-1) 0) (clickCell x (min (y+1) 8) (clickCell (max (x-1) 0) y (clickCell (min (x+1) 8) y (act0 game x y))))
+  Hide 0    -> clickCell (x-1) y (clickCell (x+1) y (clickCell x (y-1) (clickCell x (y+1) (act0 game x y))))
+  Hide (-1) -> transformCell (\_ -> Empty) game
+  Hide n    -> transformCell (\_ -> Active n) game
+  c         -> transformCell (\_ -> c) game
+  where
+    -- (x, y) = cursor game
+    cell   = (grid game)!!x!!y
+    act0 = transformCell' (\_ -> Active 0)
 
 flagCell :: Game -> Game
 flagCell = transformCell $ \case
   Hide n -> Flag n
+  Flag n -> Hide n
   c      -> c
 
 -- TODO: delete this
