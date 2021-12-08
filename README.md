@@ -34,7 +34,7 @@ Library we are going to use: Brick
 
 The application consists of 3 main components:IO component, game component, UI component.
 - IO component: responsible for loading files and save files
-- Game component: including some data types (e.g. stone,cell, board) and some logic functions (e.g. moveStone, putStone, checkWinner, giveHint …) 
+- Game component: including some data types (e.g. grid, board) and some logic functions (e.g. click, flag, rank, save...) 
 - UI component: responsible for rendering user interface(using brick).
 
 2. Challenges met so far and solutions:
