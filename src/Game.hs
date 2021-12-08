@@ -133,34 +133,21 @@ toggleNoteCell number = transformCell $ \case
     | otherwise -> Note (number : ns)
   _ -> Note [number]
 
--- clickCell :: Game -> Game
--- clickCell  = transformCell $ \case
---   Hide (-1) -> Empty
---   Hide n -> Active n
---   c      -> c
-  -- TODO click mine -> end game
-  -- TODO click zero -> BFS
-
 transformCell' :: (Cell -> Cell) -> Game -> Int -> Int -> Game
 transformCell' f game x y = game { grid = grid game & ix x . ix y %~ f }
 
 -- x, y must be the cursor index
-clickCell ::Int -> Int -> Game -> Game
-clickCell (-1) _ game = game
-clickCell 9 _ game = game
-clickCell _ (-1) game = game
-clickCell _ 9 game = game
-clickCell x y game = case cell of
-  -- make (x, y) Active 0, clickCell (x+1, y),(x-1, y), (x, y+1), (x, y-1)
-  -- Hide 0    -> clickCell x (max (y-1) 0) (clickCell x (min (y+1) 8) (clickCell (max (x-1) 0) y (clickCell (min (x+1) 8) y (act0 game x y))))
-  Hide 0    -> clickCell (x-1) y (clickCell (x+1) y (clickCell x (y-1) (clickCell x (y+1) (act0 game x y))))
-  Hide (-1) -> transformCell (\_ -> Empty) game
-  Hide n    -> transformCell (\_ -> Active n) game
-  c         -> transformCell (\_ -> c) game
-  where
-    -- (x, y) = cursor game
-    cell   = (grid game)!!x!!y
-    act0 = transformCell' (\_ -> Active 0)
+clickCell :: Int -> Int -> Game ->  Game
+clickCell x y game
+  | x < 0 || x > 8 || y < 0 || y > 8 = game
+  | otherwise  = case cell of
+    Hide 0    -> clickCell (x-1) y (clickCell (x+1) y (clickCell x (y-1) (clickCell x (y+1) (act0 game x y))))
+    Hide (-1) -> transformCell' (const Empty) game x y
+    Hide n    -> transformCell' (\_ -> Active n) game x y
+    c         -> transformCell' (const c) game x y
+    where
+      cell   = grid game!!x!!y
+      act0 = transformCell' (\(Hide n) -> Active n)
 
 flagCell :: Game -> Game
 flagCell = transformCell $ \case

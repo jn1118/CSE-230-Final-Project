@@ -100,12 +100,15 @@ handleEvent game (VtyEvent (V.EvKey key [])) =
     V.KLeft -> moveCursor West 1 game
     V.KRight -> moveCursor East 1 game
     -- click
-    -- V.KChar 'd' -> clickCell . snapshotGame $ game
+    V.KChar 'd' -> clickCell x y (snapshotGame $ game)
     -- Undo
     V.KChar 'u' -> fromMaybe game (previous game)
     -- Other
     _ -> game
+    where
+      (x,y) = cursor game
 handleEvent game _ = continue game
+
 
 -- highlight the chosen cell
 highlightCursor :: Game -> [[Widget ()]] -> [[Widget ()]]
@@ -234,7 +237,7 @@ main = do
   response <- prompt "> "
   case head' response of
     '1' -> do
-      endGame <- defaultMain app (mkGame demo)
+      endGame <- defaultMain app (mkGame simple)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
@@ -279,3 +282,14 @@ demo = let z = 0 in
   , 2, z, 7, 5, z, z, z, 1, z
   , 5, 3, z, z, z, z, z, 9, z
   ]
+
+simple :: [Int]
+simple = [-1,1,0,0,0,0,1,-1,1
+          ,1,1,0,0,1,2,3,2,1
+          ,1,1,1,0,1,-1,-1,2,2
+          ,1,-1,2,1,2,2,3,-1,1
+          ,1,1,2,-1,1,0,1,1,1
+          ,0,0,1,1,1,0,0,0,0
+          ,0,1,2,2,2,1,1,0,0
+          ,0,1,-1,-1,2,-1,1,0,0
+          ,0,1,2,2,2,1,1,0,0]
