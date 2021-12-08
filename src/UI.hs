@@ -158,11 +158,9 @@ drawGrid game =
 
 drawHelp :: Widget ()
 drawHelp =
-  [ "move:    ←↓↑→ / wasd / hjkl",
+  [ "move:    ←↓↑→",
     "open:   d",
     "flog:    f",
-    "note:    shift + 1-9",
-    "erase:   backspace / 0 / x",
     "undo:    ctrl + z / u",
     "reset:   ctrl + r",
     "quit:    ctrl + c"
@@ -177,7 +175,8 @@ drawHelp =
 drawDebug :: Game -> Widget ()
 drawDebug game =
   [ "cursor:    (" <> show x <> ", " <> show y <> ")",
-    "progress:  " <> show (grid game)
+    "progress:  " <> show (gameProgress' game)
+    
   ]
     & unlines
     & str
@@ -197,7 +196,7 @@ drawSolved game
     str "INCORRECT" & withAttr styleUnsolved & commonModifier
   | otherwise = emptyWidget
   where
-    completed = gameProgress game == 100
+    completed = gameProgress' game == 100
     solved = gameSolved game
     commonModifier =
       setAvailableSize (31, 3)
