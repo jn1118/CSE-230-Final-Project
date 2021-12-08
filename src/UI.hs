@@ -100,7 +100,9 @@ handleEvent game (VtyEvent (V.EvKey key [])) =
     V.KLeft -> moveCursor West 1 game
     V.KRight -> moveCursor East 1 game
     -- click
-    V.KChar 'd' -> clickCell x y (snapshotGame $ game)
+    V.KChar 'd' -> clickCell x y (snapshotGame game)
+        --flag
+    V.KChar 'f' -> flagCell (snapshotGame game)
     -- Undo
     V.KChar 'u' -> fromMaybe game (previous game)
     -- Other
@@ -124,7 +126,7 @@ drawCell :: Cell -> Widget ()
 drawCell cell = center $ case cell of
   Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
   Active x -> withAttr styleCellGiven . str $ show x
-  Flag x -> withAttr styleCellGiven . str $ show x
+  Flag _ -> withAttr styleCellGiven . str $ "⚐"
   Given x -> withAttr styleCellGiven . str $ show x
   Input x -> withAttr styleCellInput . str $ show x
   Note xs ->

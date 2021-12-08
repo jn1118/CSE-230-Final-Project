@@ -9,6 +9,7 @@ module Game
     Hardness,
     mkGame,
     moveCursor,
+    flagCell,
     snapshotGame,
     resetGame,
     gameProgress,
