@@ -16,6 +16,7 @@ module Game
     gameSolved,
     getRegion,
     gameProgress',
+    gameSolved',
     clickCell,
   )
 where

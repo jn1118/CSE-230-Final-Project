@@ -182,6 +182,7 @@ drawDebug game =
     & str
     & padRight Max
     & padLeftRight 1
+    & setAvailableSize (31, 6)
     & borderWithLabel (str " Debug ")
     & withBorderStyle unicodeRounded
   where
@@ -197,10 +198,10 @@ drawSolved game
   | otherwise = emptyWidget
   where
     completed = gameProgress' game == 100
-    solved = gameSolved game
+    solved = gameSolved' game
     commonModifier =
       setAvailableSize (31, 3)
-        . withBorderStyle unicodeBold
+        . withBorderStyle unicodeRounded
         . border
         . center
 
