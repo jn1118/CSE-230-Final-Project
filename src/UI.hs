@@ -5,7 +5,7 @@ import Game
 
 import Brick
 import Brick.Widgets.Border (border, borderWithLabel, hBorderWithLabel, vBorder)
-import Brick.Widgets.Border.Style (unicode, unicodeBold)
+import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
 import Data.Char (digitToInt)
 import Data.List (intersperse)
@@ -14,6 +14,7 @@ import Data.Maybe (fromMaybe)
 import qualified Graphics.Vty as V
 import Lens.Micro
 import System.Directory (doesFileExist)
+import qualified System.Directory.Internal.Prelude as V
 
 styleCursor, styleCellGiven, styleCellInput, styleCellNote :: AttrName
 styleSolved, styleUnsolved :: AttrName
@@ -23,15 +24,21 @@ styleCellInput = attrName "styleCellInput"
 styleCellNote  = attrName "styleCellNote"
 styleSolved    = attrName "styleSolved"
 styleUnsolved  = attrName "styleUnsolved"
+styleHiddenBg :: AttrName
+styleHiddenBg    = attrName "styleHiddenBg"
+
+styleCursorFc :: AttrName
+styleCursorFc   = attrName  "styleCursorFc"
 
 attributes :: AttrMap
 attributes = attrMap V.defAttr
-  [ (styleCursor    , bg V.brightBlack)
+  [ (styleCursor    , bg V.brightWhite)
   , (styleCellGiven , V.defAttr)
   , (styleCellInput , fg V.blue)
   , (styleCellNote  , fg V.yellow)
   , (styleSolved    , fg V.green)
   , (styleUnsolved  , fg V.red)
+  , (styleHiddenBg    ,  bg V.brightBlack)
   ]
 
 handleEvent :: Game -> BrickEvent () e -> EventM () (Next Game)
@@ -107,6 +114,7 @@ handleEvent game (VtyEvent (V.EvKey key [])) =
     _           -> game
 handleEvent game _ = continue game
 
+-- highlight the chosen cell
 highlightCursor :: Game -> [[[[Widget ()]]]] -> [[[[Widget ()]]]]
 highlightCursor game widgets =
   widgets & ix bigRow
@@ -122,6 +130,8 @@ highlightCursor game widgets =
 
 drawCell :: Cell -> Widget ()
 drawCell cell = center $ case cell of
+  -- Hiden x -> withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
+  -- Active x -> 
   Given x -> withAttr styleCellGiven . str $ show x
   Input x  -> withAttr styleCellInput . str $ show x
   Note xs -> fmap str xs'
@@ -137,7 +147,7 @@ drawGrid :: Game -> Widget ()
 drawGrid game =
   fmap (`getRegion` game) [0..8]
   & chunksOf 3
-  & fmap (fmap (fmap (fmap drawCell)))
+  & fmap (fmap (fmap (fmap drawCell))) --  'cause the status is 4D
   & highlightCursor game
   & fmap (fmap (fmap (intersperse (withBorderStyle unicode vBorder))))
   & fmap (fmap (fmap hBox))
@@ -155,7 +165,8 @@ drawGrid game =
 drawHelp :: Widget ()
 drawHelp =
   [ "move:    ←↓↑→ / wasd / hjkl"
-  , "answer:  1-9"
+  , "open:   d"
+  , "flog:    f"
   , "note:    shift + 1-9"
   , "erase:   backspace / 0 / x"
   , "undo:    ctrl + z / u"
@@ -165,8 +176,8 @@ drawHelp =
   & unlines
   & str
   & padLeftRight 1
-  & borderWithLabel (str " Help ")
-  & withBorderStyle unicodeBold
+  & borderWithLabel (str " Instruction ")
+  & withBorderStyle unicodeRounded
   & setAvailableSize (31, 12)
 
 drawDebug :: Game -> Widget ()
@@ -180,7 +191,7 @@ drawDebug game =
   & padRight Max
   & padLeftRight 1
   & borderWithLabel (str " Debug ")
-  & withBorderStyle unicodeBold
+  & withBorderStyle unicodeRounded
   & hLimit 31
   where (x, y) = cursor game
 
@@ -202,6 +213,8 @@ drawSolved game
 
 drawUI :: Game -> Widget ()
 drawUI game =
+  -- <+> Horizontal box layout
+  -- <=> vertical box layout
   drawGrid game <+> ( drawHelp
                 <=>   drawDebug game
                 <=>   drawSolved game
@@ -219,7 +232,7 @@ app = App
 main :: IO ()
 main = do
   putStr $ unlines
-    [ "SUDOKU"
+    [ "Mine Sweeper"
     , "  1) Load demo game"
     , "  2) Load file"
     , "  3) Load autosave"
