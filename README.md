@@ -7,23 +7,24 @@ Collaborators:
 - Qipeng Xu, A59011253, github: QipengXu;
 - Jiangnan Xu, A14534652, github: jn1118
 
-We are going to build up a Gomoku game using Haskell, which is going to be displayed on the terminal and allow two users to play simultaneously. 
+We are going to build up a minesweeper game using Haskell, which is going to be displayed on the terminal and allow one users to play. 
 
 Description:
-The size of the board is 15 x 15, which is empty initially.
-Our game allows two players to play together, one uses black stone, which is controlled by the up, down, left, right on the keyboard. The other user uses white stones, which are controlled by the W, S, A, D on the keyboard. 
+The size of the board is n x n, n depends on the difficulty the user chooses.
+Our game is a single-player puzzle video game. The objective of the game is to clear a square board containing hidden "mines" or bombs without detonating any of them, with help from clues about the number of neighbouring mines in each field. 
 
-Rules of play: Players alternate turns placing a stone of their color on an empty intersection. Black goes first. The winner is the first player to form an unbroken chain of five stones horizontally, vertically, or diagonally. 
+Rules of play: The game is played by revealing squares of the grid by clicking or otherwise indicating each square. If a square containing a mine is revealed, the player loses the game. If no mine is revealed, a digit is instead displayed in the square, indicating how many adjacent squares contain mines; if no mines are adjacent, the square becomes blank, and all adjacent squares will be recursively revealed. The player uses this information to deduce the contents of other squares and may either safely reveal each square or mark the square as containing a mine.
 
 Basic functionalities we are going to implement:
-1. Users can use those four keys mentioned above to move on the board and select which place they want to put their stones. Then, they can press shift(for black stone) or return(for white stone) to put the stones on the intersections using. 
-2. When the first player forms an unbroken chain of five stones horizontally, vertically, or diagonally, there will be a pop-up window announcing who is the winner and the game is over.
-3. There will be a reset button that will reset the board to empty, which will also restart the game.
+1. Users can use those four keys mentioned above to move on the board and select which grid they want to reveal. Then, they can press d or f to reveal a mine or flag a bomb.
+
+2. If a grid doesn't contain a bomb and it is reveal, a number will be shown to indicate how many adjacent bomb. If the number is 0, adjacent grid will be revealed **recursively**.
+
+3. The game will record time a user uses. And a rank will be displayed to show all best records.
 
 Further functionalities we are going to implement:
-1. Use cursor to select the place they want to put the stones
-2. Give user a hint (how to place the stone) or a warning that the opponent is going to win
-3. Undo the table to the last status (ask for two players’ confirmation)
+1. Reduced Uncertainty: the first grid chosen doesn't contain a bomn.
+2. Use cursor to select the grid they want to reveal or add flag.
 
 Library we are going to use: Brick
 
