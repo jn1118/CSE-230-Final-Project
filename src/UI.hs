@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module UI where
 
 import Brick
@@ -31,7 +32,7 @@ import Brick
     (<+>),
     (<=>),
   )
-import Brick.Widgets.Border (border, borderWithLabel, hBorder, hBorderWithLabel, vBorder)
+import Brick.Widgets.Border (border, borderWithLabel, hBorder, vBorder)
 import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
 import Data.Char (digitToInt)
@@ -42,9 +43,11 @@ import Data.Maybe (fromMaybe)
 import FileIO
 import Game
 import qualified Graphics.Vty as V
-import Control.Lens (makeLenses, ix, (%~), (.~) , (&), (^.))
+import Control.Lens (makeLenses,ix, (%~), (.~) , (&), (^.))
 import System.Directory (doesFileExist)
-import qualified System.Directory.Internal.Prelude as V
+
+
+makeLenses ''Game
 
 styleCursor, styleCellGiven, styleCellInput, styleCellNote :: AttrName
 styleSolved, styleUnsolved :: AttrName
@@ -52,14 +55,10 @@ styleCursor = attrName "styleCursor"
 styleCellGiven = attrName "styleCellGiven"
 styleCellInput = attrName "styleCellInput"
 styleCellNote = attrName "styleCellNote"
-
 styleSolved = attrName "styleSolved"
-
 styleUnsolved = attrName "styleUnsolved"
-
 styleHiddenBg :: AttrName
 styleHiddenBg = attrName "styleHiddenBg"
-
 styleCursorFc :: AttrName
 styleCursorFc = attrName "styleCursorFc"
 
@@ -140,7 +139,7 @@ drawCell game cell =
             & vBox
             & withAttr styleCellNote
           where
-            xs' = fmap f [1 .. 9]
+            xs' = fmap f [1 .. (game ^. hardness)]
             f x = if x `elem` xs then show x else " "
         Empty -> str " "
 
@@ -150,10 +149,9 @@ drawGrid game =
     & fmap (fmap (drawCell game)) -- render Cell
     & fmap (fmap $ hLimit 37)
     & highlightCursor game -- 显示被选择的位置
-    & fmap ((intersperse (withBorderStyle unicode hBorder)))
-    & fmap (vBox) -- [Widget]
-    & (intersperse (withBorderStyle unicode vBorder))
-    -- & intersperse (withBorderStyle unicodeBold (hBorderWithLabel (str "╋━━━━━━━━━━━━━━━━━━━━━━━╋")))
+    & fmap (intersperse (withBorderStyle unicode hBorder))
+    & fmap vBox -- [Widget]
+    & intersperse (withBorderStyle unicode vBorder)
     & hBox
     & border
     & withBorderStyle unicodeBold
@@ -238,14 +236,14 @@ containBomb nums x y n
 fillNum :: (Eq a, Num a) => Int -> (Int, Int) -> [[a]] -> [[a]]
 fillNum n pos nums
   | nums !!x!!y == -1 = nums
-  | otherwise = nums & ix x . ix y .~ ((containBomb nums (x-1) (y-1) n) +
+  | otherwise = nums & ix x . ix y .~ (containBomb nums (x-1) (y-1) n) +
                                             (containBomb nums (x-1) (y) n) +
                                             (containBomb nums (x-1) (y+1) n)+
                                             (containBomb nums (x) (y+1) n)+
                                             (containBomb nums (x) (y-1) n)+
                                             (containBomb nums (x+1) (y-1) n)+
                                             (containBomb nums (x+1) (y+1) n)+
-                                            (containBomb nums (x+1) (y) n))
+                                            (containBomb nums (x+1) (y) n)
   where x = fst pos
         y = snd pos
 
@@ -260,9 +258,9 @@ geneInit :: (Eq a, Num a) => Int -> Int -> Int -> Int -> IO [[a]]
 geneInit x y n mines= do
       g <- newStdGen
       let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
-      let b = [(num `div` n, num `mod` n) | num <- a, num /= (x*n+y)]
+      let b = [(num `div` n, num `mod` n) | num <- a, num /= x*n+y]
       let nums = [[0 | _ <- [1..n]] | _<- [1..n]]
-      let nums' =  foldr (fillMine) nums b
+      let nums' =  foldr fillMine nums b
       let poss = [(p, q) | p <- [0..(n-1)], q <- [0..(n-1)]]
       let nums'' = foldr (fillNum n) nums' poss
       return nums''
@@ -285,9 +283,9 @@ main = do
   response <- prompt "> "
   case head' response of
     '1' -> do
-      initState <- geneInit 0 0 9 10
+      initState <- geneInit 0 0 16 10
       let state = concat initState
-      endGame <- defaultMain app (mkGame state)
+      endGame <- defaultMain app (mkGame 16 10 state)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
@@ -311,7 +309,7 @@ main = do
         else putStrLn "File 'autosave.sudoku' does not exist"
     '4' -> do
       gameString <- prompt "Game string: "
-      let game = (mkGame . fmap digitToInt) gameString
+      let game = (mkGame 9 10 . fmap digitToInt) gameString
       endGame <- defaultMain app game
       promptSave endGame
       saveGame "autosave.sudoku" endGame

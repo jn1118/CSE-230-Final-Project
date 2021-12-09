@@ -12,9 +12,6 @@ module Game
     moveCursor,
     flagCell,
     resetGame,
-    gameProgress,
-    gameSolved,
-    getRegion,
     gameProgress',
     gameSolved',
     clickCell,
@@ -78,15 +75,15 @@ data Hardness
   | Hard -- 20
   deriving (Read, Show)
 
-mkGame :: [Int] -> Game
-mkGame xs =
+mkGame :: Int -> Int -> [Int] -> Game
+mkGame d m xs =
   Game
     { _cursor = (0, 2),
-      _grid = chunksOf 9 $ mkCell <$> xs,
-      _leng = 9,
-      _width = 9,
-      _hardness = 9,
-      _mine = 10,
+      _grid = chunksOf d $ mkCell <$> xs,
+      _leng = d,
+      _width = d,
+      _hardness = d,
+      _mine = m,
       _isExplode = False,
       _isOver = False
     }
@@ -127,29 +124,13 @@ transformCell f game = game {_grid = (game ^. grid) & ix x . ix y %~ f}
   where
     (x, y) = game ^. cursor
 
--- TODO: delete this
-answerCell :: Int -> Game -> Game
-answerCell number = transformCell $ \case
-  Given n -> Given n
-  _ -> Input number
-
--- TODO: delete this
-toggleNoteCell :: Int -> Game -> Game
-toggleNoteCell number = transformCell $ \case
-  Given n -> Given n
-  Note ns
-    | ns == [number] -> Empty
-    | number `elem` ns -> Note (filter (/= number) ns)
-    | otherwise -> Note (number : ns)
-  _ -> Note [number]
-
 transformCell' :: (Cell -> Cell) -> Game -> Int -> Int -> Game
 transformCell' f game x y = game {_grid = (game ^. grid) & ix x . ix y %~ f}
 
 -- x, y must be the cursor index
 clickCell :: Int -> Int -> Game -> Game
 clickCell x y game
-  | x < 0 || x > 8 || y < 0 || y > 8 = game
+  | x < 0 || x > (game ^. hardness - 1) || y < 0 || y > (game ^. hardness - 1) = game
   | otherwise = case cell of
     Hide 0 -> clickCell (x -1) y (clickCell (x + 1) y (clickCell x (y -1) (clickCell x (y + 1) (act0 game x y))))
     Hide (-1) -> game & isOver .~ True
@@ -168,33 +149,12 @@ flagCell = transformCell $ \case
   Flag n -> Hide n
   c -> c
 
--- TODO: delete this
-eraseCell :: Game -> Game
-eraseCell = transformCell $ \case
-  Given n -> Given n
-  _ -> Empty
-
 resetGame :: Game -> Game
 resetGame game = game {_grid = fmap (fmap f) (game ^. grid)}
   where
     f = \case
       Given n -> Given n
       _ -> Empty
-
-resetGame' :: [Int] -> Game
-resetGame' = mkGame
-
-gameProgress :: Game -> Int
-gameProgress game = round ((completed / total :: Float) * 100)
-  where
-    cells = concat $ (game ^. grid)
-    completed = fromIntegral $ length $ filter hasValue cells
-    total = fromIntegral $ length cells
-    hasValue = \case
-      Given _ -> True
-      Input _ -> True
-      Hide _ -> True
-      _ -> False
 
 countRightFlagsRow :: Row -> Int
 countRightFlagsRow [] = 0
@@ -211,34 +171,8 @@ gameProgress' game = round ((completed / total :: Float) * 100)
     completed = fromIntegral $ countRightFlagsGrid (game ^. grid)
     total = fromIntegral $ (game ^. mine)
 
-gameSolved :: Game -> Bool
-gameSolved game = rowsSolved && columnsSolved && regionsSolved
-  where
-    rowsSolved = solved $ game ^. grid
-    columnsSolved = solved $ getColumns game
-    regionsSolved = solved $ getRegionsFlat game
-    solved = all (\ns -> nub ns == ns) . fmap (fmap getNum)
-    getNum = \case
-      Given n -> Just n
-      Input n -> Just n
-      _ -> Nothing
-
 gameSolved' :: Game -> Bool
 gameSolved' game = countRightFlagsGrid (game ^. grid) == game ^. mine
-
-getColumns :: Game -> [[Cell]]
-getColumns game =
-  [[(game ^. grid) !! row !! column | row <- [0 .. 8]] | column <- [0 .. 8]]
-
-getRegion :: Int -> Game -> [[Cell]]
-getRegion number game =
-  [[(game ^. grid) !! row !! col | col <- [x .. x + 2]] | row <- [y .. y + 2]]
-  where
-    x = (number `mod` 3) * 3
-    y = number - (number `mod` 3)
-
-getRegionsFlat :: Game -> [[Cell]]
-getRegionsFlat game = [concat $ getRegion x game | x <- [0 .. 8]]
 
 simple :: [Int]
 simple =
