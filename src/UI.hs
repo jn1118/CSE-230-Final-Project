@@ -42,7 +42,7 @@ import Data.Maybe (fromMaybe)
 import FileIO
 import Game
 import qualified Graphics.Vty as V
-import Lens.Micro ( (%~), (&), ix, (^.), (.~))
+import Control.Lens (makeLenses, ix, (%~), (.~) , (&), (^.))
 import System.Directory (doesFileExist)
 import qualified System.Directory.Internal.Prelude as V
 
@@ -81,10 +81,8 @@ handleEvent game (VtyEvent (V.EvKey key [V.MCtrl])) =
   case key of
     -- Quit
     V.KChar 'c' -> halt game
-    -- Undo
-    V.KChar 'z' -> continue $ fromMaybe game (previous game)
     -- Reset
-    V.KChar 'r' -> continue . snapshotGame . resetGame $ game
+    V.KChar 'r' -> continue . resetGame $ game
     -- Other
     _ -> continue game
 handleEvent game (VtyEvent (V.EvKey key [V.MShift])) =
@@ -102,15 +100,13 @@ handleEvent game (VtyEvent (V.EvKey key [])) =
     V.KLeft -> moveCursor West 1 game
     V.KRight -> moveCursor East 1 game
     -- click
-    V.KChar 'd' -> clickCell x y (snapshotGame game)
+    V.KChar 'd' -> clickCell x y game
     --flag
-    V.KChar 'f' -> flagCell (snapshotGame game)
-    -- Undo
-    V.KChar 'u' -> fromMaybe game (previous game)
+    V.KChar 'f' -> flagCell game
     -- Other
     _ -> game
   where
-    (x, y) = cursor game
+    (x, y) = _cursor game
 handleEvent game _ = continue game
 
 -- highlight the chosen cell
@@ -121,12 +117,12 @@ highlightCursor game widgets =
       . ix y
     %~ withDefAttr styleCursor
   where
-    (x, y) = cursor game
+    (x, y) = _cursor game
 
 drawCell :: Game -> Cell -> Widget ()
 drawCell game cell =
   center $
-    if isOver game
+    if _isOver game
       then case cell of
         Hide (-1) -> withAttr styleCellGiven . str $ "Bomb!!"
         _ -> str " "
@@ -150,7 +146,7 @@ drawCell game cell =
 
 drawGrid :: Game -> Widget ()
 drawGrid game =
-  grid game
+  _grid game
     & fmap (fmap (drawCell game)) -- render Cell
     & fmap (fmap $ hLimit 37)
     & highlightCursor game -- 显示被选择的位置
@@ -184,10 +180,7 @@ drawDebug :: Game -> Widget ()
 drawDebug game =
   [ "cursor:    (" <> show x <> ", " <> show y <> ")",
     "progress:  " <> show (gameProgress' game)
-<<<<<<< HEAD
-=======
 
->>>>>>> main
   ]
     & unlines
     & str
@@ -198,7 +191,7 @@ drawDebug game =
     & withBorderStyle unicodeRounded
   where
     -- & hLimit 31
-    (x, y) = cursor game
+    (x, y) = _cursor game
 
 drawSolved :: Game -> Widget ()
 drawSolved game
@@ -414,91 +407,6 @@ demo =
       ]
 
 simple :: [Int]
-<<<<<<< HEAD
-simple =
-  [ -1,
-    1,
-    0,
-    0,
-    0,
-    0,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    0,
-    0,
-    1,
-    2,
-    3,
-    2,
-    1,
-    1,
-    1,
-    1,
-    0,
-    1,
-    -1,
-    -1,
-    2,
-    2,
-    1,
-    -1,
-    2,
-    1,
-    2,
-    2,
-    3,
-    -1,
-    1,
-    1,
-    1,
-    2,
-    -1,
-    1,
-    0,
-    1,
-    1,
-    1,
-    0,
-    0,
-    1,
-    1,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    2,
-    2,
-    2,
-    1,
-    1,
-    0,
-    0,
-    0,
-    1,
-    -1,
-    -1,
-    2,
-    -1,
-    1,
-    0,
-    0,
-    0,
-    1,
-    2,
-    2,
-    2,
-    1,
-    1,
-    0,
-    0
-  ]
-=======
 simple = [-1,1,0,0,0,0,1,-1,1
           ,1,1,0,0,1,2,3,2,1
           ,1,1,1,0,1,-1,-1,2,2
@@ -508,4 +416,3 @@ simple = [-1,1,0,0,0,0,1,-1,1
           ,0,1,2,2,2,1,1,0,0
           ,0,1,-1,-1,2,-1,1,0,0
           ,0,1,2,2,2,1,1,0,0]
->>>>>>> main

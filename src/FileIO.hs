@@ -11,10 +11,10 @@ import Game
 import System.IO (hFlush, stdout)
 
 exportGame :: Game -> String
-exportGame = show . grid
+exportGame = show . _grid
 
 importGame :: String -> Game
-importGame = (\g -> Game (4, 4) g 9 9 9 10 False False Nothing) . read
+importGame = (\g -> Game (4, 4) g 9 9 9 10 False False) . read
 
 loadGame :: FilePath -> IO Game
 loadGame filename = importGame <$> readFile filename
