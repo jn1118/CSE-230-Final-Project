@@ -34,13 +34,14 @@ import Brick.Widgets.Border (border, borderWithLabel, hBorder, hBorderWithLabel,
 import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
 import Data.Char (digitToInt)
-import Data.List (intersperse)
+import Data.List (intersperse, nub)
+import System.Random
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromMaybe)
 import FileIO
 import Game
 import qualified Graphics.Vty as V
-import Lens.Micro
+import Lens.Micro ( (%~), (&), ix, (^.), (.~))
 import System.Directory (doesFileExist)
 import qualified System.Directory.Internal.Prelude as V
 
@@ -176,7 +177,7 @@ drawDebug :: Game -> Widget ()
 drawDebug game =
   [ "cursor:    (" <> show x <> ", " <> show y <> ")",
     "progress:  " <> show (gameProgress' game)
-    
+
   ]
     & unlines
     & str
@@ -225,6 +226,48 @@ app =
       appAttrMap = const attributes
     }
 
+containBomb :: (Eq a, Num p, Num a) => [[a]] -> Int -> Int -> Int -> p
+containBomb nums x y n
+ | x <0 || y < 0 || x >= n || y >=n = 0
+ | nums!!x!!y == -1 = 1
+ | otherwise = 0
+
+fillNum :: (Eq a, Num a) => Int -> (Int, Int) -> [[a]] -> [[a]]
+fillNum n pos nums
+  | nums !!x!!y == -1 = nums
+  | otherwise = nums & ix x . ix y .~ ((containBomb nums (x-1) (y-1) n) +
+                                            (containBomb nums (x-1) (y) n) +
+                                            (containBomb nums (x-1) (y+1) n)+
+                                            (containBomb nums (x) (y+1) n)+
+                                            (containBomb nums (x) (y-1) n)+
+                                            (containBomb nums (x+1) (y-1) n)+
+                                            (containBomb nums (x+1) (y+1) n)+
+                                            (containBomb nums (x+1) (y) n))
+  where x = fst pos
+        y = snd pos
+
+fillMine :: (Eq a, Num a) => (Int, Int) -> [[a]] -> [[a]]
+fillMine pos nums = nums & ix x . ix y .~ (-1)
+ where
+   x = fst pos
+   y = snd pos
+
+
+geneInit :: (Eq a, Num a) => Int -> Int -> Int -> Int -> IO [[a]]
+geneInit x y n mines= do
+      g <- newStdGen
+      let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
+      let b = [(num `div` n, num `mod` n) | num <- a, num /= (x*n+y)]
+      let nums = [[0 | _ <- [1..n]] | _<- [1..n]]
+      let nums' =  foldr (fillMine) nums b
+      let poss = [(p, q) | p <- [0..(n-1)], q <- [0..(n-1)]]
+      let nums'' = foldr (fillNum n) nums' poss
+      return nums''
+
+-- >>> geneInit 0 0 4 3
+-- [[2,-1,2,0],[2,-1,2,0],[1,1,2,1],[0,0,1,-1]]
+
+
 main :: IO ()
 main = do
   putStr $
@@ -239,7 +282,9 @@ main = do
   response <- prompt "> "
   case head' response of
     '1' -> do
-      endGame <- defaultMain app (mkGame simple)
+      initState <- geneInit 0 0 9 10
+      let state = concat initState
+      endGame <- defaultMain app (mkGame state)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
