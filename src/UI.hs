@@ -62,6 +62,14 @@ styleHiddenBg :: AttrName
 styleHiddenBg = attrName "styleHiddenBg"
 styleCursorFc :: AttrName
 styleCursorFc = attrName "styleCursorFc"
+styleMonsterLv1, styleMonsterLv2, styleMonsterLv3, styleMonsterLv4, styleMonsterLv5 :: AttrName
+styleMonsterLv1 = attrName "styleMonsterLv1"
+styleMonsterLv2 = attrName "styleMonsterLv2"
+styleMonsterLv3 = attrName "styleMonsterLv3"
+styleMonsterLv4 = attrName "styleMonsterLv4"
+styleMonsterLv5 = attrName "styleMonsterLv5"
+
+
 
 attributes :: AttrMap
 attributes =
@@ -73,7 +81,12 @@ attributes =
       (styleCellNote, fg V.yellow),
       (styleSolved, fg V.green),
       (styleUnsolved, fg V.red),
-      (styleHiddenBg, fg V.black)
+      (styleHiddenBg, fg V.black),
+      (styleMonsterLv1, fg V.cyan),
+      (styleMonsterLv2, fg V.red),
+      (styleMonsterLv3, fg V.magenta),
+      (styleMonsterLv4, fg V.yellow),
+      (styleMonsterLv5, fg V.green)
     ]
 
 handleEvent :: Game -> BrickEvent () e -> EventM () (Next Game)
@@ -142,6 +155,14 @@ drawCell game cell =
           where
             xs' = fmap f [1 .. (game ^. hardness)]
             f x = if x `elem` xs then show x else " "
+        Monster x ->  
+          case x of
+           (-1) -> withAttr styleMonsterLv1 . str $ "☥"
+           (-2) -> withAttr styleMonsterLv2 . str $ "♙"
+           (-3) -> withAttr styleMonsterLv3 . str $ "♜"
+           (-4) -> withAttr styleMonsterLv4 . str $ "♘"
+           (-5) -> withAttr styleMonsterLv5 . str $ "♕"
+           _    -> str " "
         Empty -> str " "
 
 drawGrid :: Game -> Widget ()
@@ -162,7 +183,7 @@ drawGrid game =
 drawHelp :: Widget ()
 drawHelp =
   [ "move:    ←↓↑→",
-    "open:   d",
+    "open:    d",
     "flog:    f",
     "undo:    ctrl + z / u",
     "reset:   ctrl + r",
@@ -178,8 +199,10 @@ drawHelp =
 drawDebug :: Game -> Widget ()
 drawDebug game =
   [ "cursor:    (" <> show x <> ", " <> show y <> ")",
-    "progress:  " <> show (gameProgress' game)
-
+    "HP:        " <> show (game ^. hp),
+    "LV:        " <> show (game ^. lv),
+    "EX:        " <> show (game ^. ex),
+    "NE:        " <> show (game ^. ne)
   ]
     & unlines
     & str
