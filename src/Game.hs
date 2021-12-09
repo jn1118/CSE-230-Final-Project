@@ -36,7 +36,7 @@ data Cell
   | Monster Int
   deriving (Eq, Read, Show)
 
-type Row = [Cell]
+type Row = [Cell] 
 
 type Grid = [Row]
 
@@ -65,15 +65,6 @@ data Direction
   | West
   deriving (Read, Show)
 
--- mkGame :: [Int] -> Game
--- mkGame xs = Game
---   { cursor = (4, 4)
---   , grid = chunksOf 9 $ mkCell <$> xs
---   , previous = Nothing
---   }
---   where mkCell 0 = Empty
---         mkCell n = Given n
-
 data Hardness
   = Simple -- 22 lv 1 33| lv2 25|lv3 20 | lv4 13| lv5 6
   | Intermediate -- 
@@ -83,12 +74,12 @@ data Hardness
 mkGame :: Int -> Int -> [Int] -> Game
 mkGame d m xs =
   Game
-    { _cursor = (0, 2),
+    { _cursor = (0, 0),
       _grid = chunksOf d $ mkCell <$> xs,
-      _leng = d,
-      _width = d,
-      _hardness = d,
-      _mine = m,
+      _leng = d, -- const
+      _width = d, -- const
+      _hardness = d, -- const
+      _mine = m, -- const
       _isExplode = False,
       _isOver = False,
       _ex = 0,
@@ -98,20 +89,6 @@ mkGame d m xs =
     }
   where
     mkCell n = Hide n
-
--- moveCursor :: Direction -> Int -> Game -> Game
--- moveCursor direction distance game =
---   (\c -> game { cursor = c }) $ case direction of
---     North -> (x, wrap (y - distance))
---     South -> (x, wrap (y + distance))
---     East  -> (wrap (x + distance), y)
---     West  -> (wrap (x - distance), y)
---   where
---     (x, y) = cursor game
---     wrap n
---       | n >= 9    = n - 9 -- TODO: n >= game.hardness
---       | n < 0     = n + 9
---       | otherwise = n
 
 moveCursor :: Direction -> Int -> Game -> Game
 moveCursor direction distance game =
@@ -136,22 +113,54 @@ transformCell f game = game {_grid = (game ^. grid) & ix x . ix y %~ f}
 transformCell' :: (Cell -> Cell) -> Game -> Int -> Int -> Game
 transformCell' f game x y = game {_grid = (game ^. grid) & ix x . ix y %~ f}
 
+nextLevelList :: [Int]
+nextLevelList = [10,50,167,250,400,400]
+
+handleMonster :: Int -> Int -> Game -> Game
+handleMonster x y game 
+  | userLevel >= (-n) = if (experience - n) >= nextLevel then turnMonster (((game & ex .~ (experience - n)) & lv .~ (userLevel + 1)) & ne .~ (nextLevelList !! userLevel)) x y else turnMonster (game & ex .~ (experience - n)) x y
+  | otherwise         = if (experience - n) >= nextLevel then turnMonster ((((game & ex .~ (experience - n)) & lv .~ (userLevel + 1)) & ne .~ (nextLevelList !! userLevel)) & hp .~ (currentHP + n)) x y else turnMonster ((game & ex .~ (experience - n)) & hp .~ (currentHP + n)) x y
+  where 
+    Hide n = (game ^. grid) !! x !! y
+    turnMonster = transformCell' (\(Hide n) -> Monster n)
+    userLevel   = game ^. lv
+    nextLevel   = game ^. ne
+    experience  = game ^. ex
+    currentHP   = game ^. hp
+
+handleValidCell :: Int -> Int -> Game -> Game
+handleValidCell x y game = case cell of
+  Hide n -> if (n < 0) 
+            then handleMonster x y game
+            else if (n == 0) 
+            then clickCell (x -1) y (clickCell (x + 1) y (clickCell x (y - 1) (clickCell x (y + 1) (act0 game x y))))
+            else transformCell' (\(Hide n) -> Active n) game x y
+  c -> transformCell' (const c) game x y
+  where
+    cell        = (game ^. grid) !! x !! y
+    act0        = transformCell' (\(Hide n) -> Active n)
+    turnMonster = transformCell' (\(Hide n) -> Monster n)
+    userLevel   = _lv game 
+    nextLevel   = _ne game
+    experience  = _ex game
+    currentHP   = _hp game
+
+
 -- x, y must be the cursor index
 clickCell :: Int -> Int -> Game -> Game
 clickCell x y game
   | x < 0 || x > (game ^. hardness - 1) || y < 0 || y > (game ^. hardness - 1) = game
-  | otherwise = case cell of
-    Hide 0 -> clickCell (x -1) y (clickCell (x + 1) y (clickCell x (y -1) (clickCell x (y + 1) (act0 game x y))))
-    Hide (-1) -> game & isOver .~ True
-    -- game {isOver = isOver game &  %~ True }
-    -- game {isOver = isOver game & _8 .~ True }
-    -- transformCell' (\_ -> Show_bomb (-1)) game x y
-    Hide n -> transformCell' (\_ -> Active n) game x y
-    c -> transformCell' (const c) game x y
+  | otherwise = handleValidCell x y game
   where
-    cell = (game ^. grid) !! x !! y
-    act0 = transformCell' (\(Hide n) -> Active n)
+    cell        = (game ^. grid) !! x !! y
+    act0        = transformCell' (\(Hide n) -> Active n)
+    turnMonster = transformCell' (\(Hide n) -> Monster n)
+    userLevel   = _lv game 
+    nextLevel   = _ne game
+    experience  = _ex game
+    currentHP   = _hp game
 
+-- delete
 flagCell :: Game -> Game
 flagCell = transformCell $ \case
   Hide n -> Flag n
@@ -185,7 +194,7 @@ gameSolved' game = countRightFlagsGrid (game ^. grid) == game ^. mine
 
 simple :: [Int]
 simple =
-  [ -1,
+  [ -11,
     1,
     0,
     0,
