@@ -239,7 +239,7 @@ drawSolved :: Game -> Widget ()
 drawSolved game
   | completed && solved =
     str "SOLVED" & withAttr styleSolved & commonModifier
-  | not solved =
+  | completed && not solved =
     str "INCORRECT" & withAttr styleUnsolved & commonModifier
   | otherwise = emptyWidget
   where
@@ -327,7 +327,7 @@ main = do
     '1' -> do
       initState <- geneInit 16
       let state = concat initState
-      endGame <- defaultMain app (mkGame 16 10 state)
+      endGame <- defaultMain app (mkGame 16 10 [16,14,10,6,3] state)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
@@ -351,7 +351,7 @@ main = do
         else putStrLn "File 'autosave.sudoku' does not exist"
     '4' -> do
       gameString <- prompt "Game string: "
-      let game = (mkGame 9 10 . fmap digitToInt) gameString
+      let game = (mkGame 9 10 [16,14,10,6,3] . fmap digitToInt) gameString
       endGame <- defaultMain app game
       promptSave endGame
       saveGame "autosave.sudoku" endGame

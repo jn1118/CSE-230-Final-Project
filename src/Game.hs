@@ -52,7 +52,8 @@ data Game = Game
     _hp :: Int,
     _ex :: Int, 
     _lv :: Int,
-    _ne :: Int
+    _ne :: Int,
+    _msNum :: [Int]
   }
   deriving (Read, Show)
 
@@ -71,8 +72,8 @@ data Hardness
   | Hard -- 
   deriving (Read, Show)
 
-mkGame :: Int -> Int -> [Int] -> Game
-mkGame d m xs =
+mkGame :: Int -> Int -> [Int] -> [Int] -> Game
+mkGame d m ms_num xs =
   Game
     { _cursor = (0, 0),
       _grid = chunksOf d $ mkCell <$> xs,
@@ -85,7 +86,8 @@ mkGame d m xs =
       _ex = 0,
       _hp = 10,
       _lv = 1,
-      _ne = 10
+      _ne = 10,
+      _msNum = ms_num
     }
   where
     mkCell n = Hide n
