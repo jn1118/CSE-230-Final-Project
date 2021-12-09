@@ -16,8 +16,8 @@
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
 
-resolver: lts-16.8
-compiler: ghc-8.10.2
+resolver: lts-17.9
+# compiler: ghc-8.10.7
 # User packages to be built.
 # Various formats can be used as shown in the example below.
 #
@@ -38,6 +38,7 @@ compiler: ghc-8.10.2
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - .
+# - lens-5.1@sha256:eb01fc4b1cfbad0e94c497eaf7b9f0e9b6c3dc7645c8b4597da7dc9d579f8500,14519
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps: []

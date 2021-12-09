@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Game
   ( Cell (..),
@@ -24,7 +25,8 @@ where
 import Data.Function ((&))
 import Data.List (nub)
 import Data.List.Split (chunksOf)
-import Lens.Micro (ix, over, (%~), (.~), (^.))
+import Lens.Micro (ix, (%~))
+import Control.Lens (makeLenses)
 
 data Cell
   = Given Int
@@ -53,6 +55,8 @@ data Game = Game
     previous :: Maybe Game -- TODO: delete
   }
   deriving (Read, Show)
+
+makeLenses ''Game
 
 data Direction
   = North
