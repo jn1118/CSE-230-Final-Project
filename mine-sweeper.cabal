@@ -28,3 +28,4 @@ executable mine-sweeper
                      , vty
                      , random >= 1.1
                      , lens
+                     , random-shuffle

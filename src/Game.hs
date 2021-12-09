@@ -33,6 +33,7 @@ data Cell
   | Active Int
   | Flag Int
   | Show_bomb Int
+  | Monster Int
   deriving (Eq, Read, Show)
 
 type Row = [Cell]
@@ -47,7 +48,11 @@ data Game = Game
     _hardness :: Int,
     _mine :: Int,
     _isExplode :: Bool,
-    _isOver :: Bool
+    _isOver :: Bool,
+    _hp :: Int,
+    _ex :: Int, 
+    _lv :: Int,
+    _ne :: Int
   }
   deriving (Read, Show)
 
@@ -70,9 +75,9 @@ data Direction
 --         mkCell n = Given n
 
 data Hardness
-  = Simple -- 8
-  | Intermediate -- 16
-  | Hard -- 20
+  = Simple -- 22 lv 1 33| lv2 25|lv3 20 | lv4 13| lv5 6
+  | Intermediate -- 
+  | Hard -- 
   deriving (Read, Show)
 
 mkGame :: Int -> Int -> [Int] -> Game
@@ -85,7 +90,11 @@ mkGame d m xs =
       _hardness = d,
       _mine = m,
       _isExplode = False,
-      _isOver = False
+      _isOver = False,
+      _ex = 0,
+      _hp = 10,
+      _lv = 1,
+      _ne = 10
     }
   where
     mkCell n = Hide n

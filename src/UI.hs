@@ -37,7 +37,9 @@ import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
 import Data.Char (digitToInt)
 import Data.List (intersperse, nub)
-import System.Random
+import System.Random (newStdGen, Random (randomRs))
+import System.Random.Shuffle (shuffle', shuffle)
+
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromMaybe)
 import FileIO
@@ -45,7 +47,6 @@ import Game
 import qualified Graphics.Vty as V
 import Control.Lens (makeLenses,ix, (%~), (.~) , (&), (^.))
 import System.Directory (doesFileExist)
-
 
 makeLenses ''Game
 
@@ -254,19 +255,23 @@ fillMine pos nums = nums & ix x . ix y .~ (-1)
    y = snd pos
 
 
-geneInit :: (Eq a, Num a) => Int -> Int -> Int -> Int -> IO [[a]]
-geneInit x y n mines= do
+
+
+geneInit n mines= do
       g <- newStdGen
-      let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
-      let b = [(num `div` n, num `mod` n) | num <- a, num /= x*n+y]
-      let nums = [[0 | _ <- [1..n]] | _<- [1..n]]
-      let nums' =  foldr fillMine nums b
+      let initList = [1 | _ <- [1..33]] ++ [2 | _ <- [1..27]] ++ [3 | _<- [1.. 20]] ++ [4 | _<- [1..13]] ++ [5 | _<- [1..6]] ++ [0 | _<-[1..(n*n-33-27-20-13-6)]]
+      let shuffledList = shuffle' initList (length initList) g
+      let nums = chunksOf n shuffledList
+      -- let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
+      -- let b = [(num `div` n, num `mod` n) | num <- a]
+      -- let nums = [[0 | _ <- [1..n]] | _<- [1..n]]
+      -- let nums' =  foldr fillMine nums b
       let poss = [(p, q) | p <- [0..(n-1)], q <- [0..(n-1)]]
-      let nums'' = foldr (fillNum n) nums' poss
+      let nums'' = foldr (fillNum n) nums poss
       return nums''
 
--- >>> geneInit 0 0 4 3
--- [[2,-1,2,0],[2,-1,2,0],[1,1,2,1],[0,0,1,-1]]
+-- >>> geneInit 22 3
+-- [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
 
 
 main :: IO ()
@@ -283,7 +288,7 @@ main = do
   response <- prompt "> "
   case head' response of
     '1' -> do
-      initState <- geneInit 0 0 16 10
+      initState <- geneInit 16 10
       let state = concat initState
       endGame <- defaultMain app (mkGame 16 10 state)
       promptSave endGame
@@ -317,92 +322,6 @@ main = do
   where
     head' [] = ' '
     head' x = head x
-
-demo :: [Int]
-demo =
-  let z = 0
-   in [ z,
-        6,
-        z,
-        z,
-        z,
-        z,
-        z,
-        7,
-        3,
-        z,
-        7,
-        z,
-        z,
-        z,
-        1,
-        5,
-        z,
-        4,
-        z,
-        z,
-        z,
-        z,
-        7,
-        z,
-        1,
-        z,
-        z,
-        7,
-        5,
-        z,
-        8,
-        z,
-        6,
-        4,
-        z,
-        z,
-        3,
-        z,
-        8,
-        9,
-        1,
-        5,
-        2,
-        z,
-        7,
-        z,
-        z,
-        2,
-        7,
-        z,
-        4,
-        z,
-        5,
-        9,
-        z,
-        z,
-        6,
-        z,
-        9,
-        z,
-        z,
-        z,
-        z,
-        2,
-        z,
-        7,
-        5,
-        z,
-        z,
-        z,
-        1,
-        z,
-        5,
-        3,
-        z,
-        z,
-        z,
-        z,
-        z,
-        9,
-        z
-      ]
 
 simple :: [Int]
 simple = [-1,1,0,0,0,0,1,-1,1
