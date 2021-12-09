@@ -2,29 +2,31 @@
 
 Proposal for CSE230 final project
 
-Collaborators: 
-- Yiyan Chen, A16186093, github: YiyanChen; 
+Collaborators:
+
+- Yiyan Chen, A16186093, github: YiyanChen;
 - Qipeng Xu, A59011253, github: QipengXu;
 - Jiangnan Xu, A14534652, github: jn1118
 
-We are going to build up a minesweeper game using Haskell, which is going to be displayed on the terminal and allow one users to play. 
+We are going to build up a Mamono game using Haskell, which is going to be displayed on the terminal and allow one users to play.
 
 Description:
 The size of the board is n x n, n depends on the difficulty the user chooses.
-Our game is a single-player puzzle video game. The objective of the game is to clear a square board containing hidden "mines" or bombs without detonating any of them, with help from clues about the number of neighbouring mines in each field. 
+Our game is a single-player terminal game. Player gains levels by killing weak monsters and win when the user defeat them all. The objective of the game is to clear a square board containing hidden "mines" or bombs without detonating any of them, with help from clues about the number of neighbouring mines in each field.
 
-Rules of play: The game is played by revealing squares of the grid by clicking or otherwise indicating each square. If a square containing a mine is revealed, the player loses the game. If no mine is revealed, a digit is instead displayed in the square, indicating how many adjacent squares contain mines; if no mines are adjacent, the square becomes blank, and all adjacent squares will be recursively revealed. The player uses this information to deduce the contents of other squares and may either safely reveal each square or mark the square as containing a mine.
+Rules of play: The n x n board is divided into cells, with monsters (from level 1 to level 5) randomly distributed. The number on a cell shows the sum of the level of monsters adjacent to it (there are at most 8 monsters around one cell). Using this information, player can determine which cells are safe or contain mosters that the user is able to beat. The player has Level, HP, EX, and those information will display next to the board. Player can only beat monsters with lower or equal level. If a player successfully beats a monster, he/she will gain experience. Otherwise, he/she will lost HP according to the level of the monster. The player will increase level if he/she achieves the required experience for next level. The game will end if the player's HP is lower than 0. To win, the player need to defeat all monsters.
 
 Basic functionalities we are going to implement:
-1. Users can use those four keys mentioned above to move on the board and select which grid they want to reveal. Then, they can press d or f to reveal a mine or flag a bomb.
 
-2. If a grid doesn't contain a bomb and it is reveal, a number will be shown to indicate how many adjacent bomb. If the number is 0, adjacent grid will be revealed **recursively**.
+1. Users can use those four keys mentioned above to move on the board and select which grid they want to reveal. Then, they can press d to "open" that cell.
 
-3. The game will record time a user uses. And a rank will be displayed to show all best records.
+2. If a grid doesn't contain a monster and it is revealed, the sum of the level of monsters adjacent to it will be shown. If the number is 0, adjacent grid will be revealed **recursively**.
+
+3. The game will record the player's HP, EX, and level, and put all the information next to the board.
 
 Further functionalities we are going to implement:
-1. Reduced Uncertainty: the first grid chosen doesn't contain a bomn.
-2. Use cursor to select the grid they want to reveal or add flag.
+
+1. Generate board and randomly put the certain amount of monsters with different level on the board.
 
 Library we are going to use: Brick
 
@@ -32,9 +34,10 @@ Library we are going to use: Brick
 
 1. application architecture (the key components):
 
-The application consists of 3 main components:IO component, game component, UI component.
+The application consists of 3 main components: IO component, game component, UI component.
+
 - IO component: responsible for loading files and save files
-- Game component: including some data types (e.g. grid, board) and some logic functions (e.g. click, flag, rank, save...) 
+- Game component: including some data types (e.g. grid, board) and some logic functions (e.g. click, flag, rank, save...)
 - UI component: responsible for rendering user interface(using brick).
 
 2. Challenges met so far and solutions:
