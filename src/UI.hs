@@ -272,7 +272,8 @@ fillNum n pos nums
   where x = fst pos
         y = snd pos
 
-geneInit n mines= do
+geneInit :: (Num a, Ord a) => Int -> IO [[a]]
+geneInit n= do
       g <- newStdGen
       let initList = [-1 | _ <- [1..33]] ++ [-2 | _ <- [1..27]] ++ [-3 | _<- [1.. 20]] ++ [-4 | _<- [1..13]] ++ [-5 | _<- [1..6]] ++ [0 | _<-[1..(n*n-33-27-20-13-6)]]
       let shuffledList = shuffle' initList (length initList) g
@@ -303,9 +304,9 @@ main = do
   response <- prompt "> "
   case head' response of
     '1' -> do
-      initState <- geneInit 16 10
+      initState <- geneInit 22
       let state = concat initState
-      endGame <- defaultMain app (mkGame 16 10 state)
+      endGame <- defaultMain app (mkGame 22 10 state)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
