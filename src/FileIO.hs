@@ -14,7 +14,7 @@ exportGame :: Game -> String
 exportGame = show . grid
 
 importGame :: String -> Game
-importGame = (\g -> Game (4, 4) g 9 9 9 10 Nothing) . read
+importGame = (\g -> Game (4, 4) g 9 9 9 10 False False Nothing) . read
 
 loadGame :: FilePath -> IO Game
 loadGame filename = importGame <$> readFile filename

@@ -24,7 +24,7 @@ where
 import Data.Function ((&))
 import Data.List (nub)
 import Data.List.Split (chunksOf)
-import Lens.Micro (ix, (%~))
+import Lens.Micro (ix, over, (%~), (.~), (^.))
 
 data Cell
   = Given Int
@@ -34,6 +34,7 @@ data Cell
   | Hide Int
   | Active Int
   | Flag Int
+  | Show_bomb Int
   deriving (Eq, Read, Show)
 
 type Row = [Cell]
@@ -47,6 +48,8 @@ data Game = Game
     width :: Int,
     hardness :: Int,
     mine :: Int,
+    isExplode :: Bool,
+    isOver :: Bool,
     previous :: Maybe Game -- TODO: delete
   }
   deriving (Read, Show)
@@ -74,15 +77,18 @@ data Hardness
   deriving (Read, Show)
 
 mkGame :: [Int] -> Game
-mkGame xs = Game
-  { cursor = (0, 2)
-  , grid = chunksOf 9 $ mkCell <$> xs
-  , leng = 9
-  , width = 9
-  , hardness = 9
-  , mine = 10
-  , previous = Nothing
-  }
+mkGame xs =
+  Game
+    { cursor = (0, 2),
+      grid = chunksOf 9 $ mkCell <$> xs,
+      leng = 9,
+      width = 9,
+      hardness = 9,
+      mine = 10,
+      isExplode = False,
+      isOver = False,
+      previous = Nothing
+    }
   where
     mkCell n = Hide n
 
@@ -109,10 +115,10 @@ moveCursor direction distance game =
     West -> (wrap (x - distance), y)
   where
     (x, y) = cursor game
-    h      = hardness game
+    h = hardness game
     wrap n
-      | n >= h    = n - h -- TODO: n >= game.hardness
-      | n < 0     = n + h
+      | n >= h = n - h -- TODO: n >= game.hardness
+      | n < 0 = n + h
       | otherwise = n
 
 transformCell :: (Cell -> Cell) -> Game -> Game
@@ -137,26 +143,29 @@ toggleNoteCell number = transformCell $ \case
   _ -> Note [number]
 
 transformCell' :: (Cell -> Cell) -> Game -> Int -> Int -> Game
-transformCell' f game x y = game { grid = grid game & ix x . ix y %~ f }
+transformCell' f game x y = game {grid = grid game & ix x . ix y %~ f}
 
 -- x, y must be the cursor index
-clickCell :: Int -> Int -> Game ->  Game
+clickCell :: Int -> Int -> Game -> Game
 clickCell x y game
   | x < 0 || x > 8 || y < 0 || y > 8 = game
-  | otherwise  = case cell of
-    Hide 0    -> clickCell (x-1) y (clickCell (x+1) y (clickCell x (y-1) (clickCell x (y+1) (act0 game x y))))
-    Hide (-1) -> transformCell' (const Empty) game x y
-    Hide n    -> transformCell' (\_ -> Active n) game x y
-    c         -> transformCell' (const c) game x y
-    where
-      cell   = grid game!!x!!y
-      act0 = transformCell' (\(Hide n) -> Active n)
+  | otherwise = case cell of
+    Hide 0 -> clickCell (x -1) y (clickCell (x + 1) y (clickCell x (y -1) (clickCell x (y + 1) (act0 game x y))))
+    Hide (-1) -> game & isOver .~ True
+    -- game {isOver = isOver game &  %~ True }
+    -- game {isOver = isOver game & _8 .~ True }
+    -- transformCell' (\_ -> Show_bomb (-1)) game x y
+    Hide n -> transformCell' (\_ -> Active n) game x y
+    c -> transformCell' (const c) game x y
+  where
+    cell = grid game !! x !! y
+    act0 = transformCell' (\(Hide n) -> Active n)
 
 flagCell :: Game -> Game
 flagCell = transformCell $ \case
   Hide n -> Flag n
   Flag n -> Hide n
-  c      -> c
+  c -> c
 
 -- TODO: delete this
 eraseCell :: Game -> Game
@@ -240,12 +249,86 @@ getRegionsFlat :: Game -> [[Cell]]
 getRegionsFlat game = [concat $ getRegion x game | x <- [0 .. 8]]
 
 simple :: [Int]
-simple = [-1,1,0,0,0,0,1,-1,1
-          ,1,1,0,0,1,2,3,2,1
-          ,1,1,1,0,1,-1,-1,2,2
-          ,1,-1,2,1,2,2,3,-1,1
-          ,1,1,2,-1,1,0,1,1,1
-          ,0,0,1,1,1,0,0,0,0
-          ,0,1,2,2,2,1,1,0,0
-          ,0,1,-1,-1,2,-1,1,0,0
-          ,0,1,2,2,2,1,1,0,0]
+simple =
+  [ -1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    -1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    2,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    -1,
+    -1,
+    2,
+    2,
+    1,
+    -1,
+    2,
+    1,
+    2,
+    2,
+    3,
+    -1,
+    1,
+    1,
+    1,
+    2,
+    -1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    -1,
+    -1,
+    2,
+    -1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    0,
+    0
+  ]

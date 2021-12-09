@@ -17,6 +17,7 @@ import Brick
     emptyWidget,
     fg,
     hBox,
+    hLimit,
     halt,
     neverShowCursor,
     padLeftRight,
@@ -28,7 +29,7 @@ import Brick
     withBorderStyle,
     withDefAttr,
     (<+>),
-    (<=>), hLimit
+    (<=>),
   )
 import Brick.Widgets.Border (border, borderWithLabel, hBorder, hBorderWithLabel, vBorder)
 import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
@@ -101,16 +102,15 @@ handleEvent game (VtyEvent (V.EvKey key [])) =
     V.KRight -> moveCursor East 1 game
     -- click
     V.KChar 'd' -> clickCell x y (snapshotGame game)
-        --flag
+    --flag
     V.KChar 'f' -> flagCell (snapshotGame game)
     -- Undo
     V.KChar 'u' -> fromMaybe game (previous game)
     -- Other
     _ -> game
-    where
-      (x,y) = cursor game
+  where
+    (x, y) = cursor game
 handleEvent game _ = continue game
-
 
 -- highlight the chosen cell
 highlightCursor :: Game -> [[Widget ()]] -> [[Widget ()]]
@@ -122,29 +122,36 @@ highlightCursor game widgets =
   where
     (x, y) = cursor game
 
-drawCell :: Cell -> Widget ()
-drawCell cell = center $ case cell of
-  Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
-  Active x -> withAttr styleCellGiven . str $ show x
-  Flag _ -> withAttr styleCellGiven . str $ "⚐"
-  Given x -> withAttr styleCellGiven . str $ show x
-  Input x -> withAttr styleCellInput . str $ show x
-  Note xs ->
-    fmap str xs'
-      & chunksOf 3
-      & fmap hBox
-      & vBox
-      & withAttr styleCellNote
-    where
-      xs' = fmap f [1 .. 9]
-      f x = if x `elem` xs then show x else " "
-  Empty -> str " "
+drawCell :: Game -> Cell -> Widget ()
+drawCell game cell =
+  center $
+    if isOver game
+      then case cell of
+        Hide (-1) -> withAttr styleCellGiven . str $ "Bomb!!"
+        _ -> str " "
+      else case cell of
+        Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
+        Active x -> withAttr styleCellGiven . str $ show x
+        Show_bomb _ -> withAttr styleCellGiven . str $ "Bomb!!"
+        Flag _ -> withAttr styleCellGiven . str $ "⚐"
+        Given x -> withAttr styleCellGiven . str $ show x
+        Input x -> withAttr styleCellInput . str $ show x
+        Note xs ->
+          fmap str xs'
+            & chunksOf 3
+            & fmap hBox
+            & vBox
+            & withAttr styleCellNote
+          where
+            xs' = fmap f [1 .. 9]
+            f x = if x `elem` xs then show x else " "
+        Empty -> str " "
 
 drawGrid :: Game -> Widget ()
 drawGrid game =
   grid game
-    & fmap (fmap (drawCell)) -- render Cell
-    & fmap(fmap $ hLimit 37)
+    & fmap (fmap (drawCell game)) -- render Cell
+    & fmap (fmap $ hLimit 37)
     & highlightCursor game -- 显示被选择的位置
     & fmap ((intersperse (withBorderStyle unicode hBorder)))
     & fmap (vBox) -- [Widget]
@@ -176,7 +183,6 @@ drawDebug :: Game -> Widget ()
 drawDebug game =
   [ "cursor:    (" <> show x <> ", " <> show y <> ")",
     "progress:  " <> show (gameProgress' game)
-    
   ]
     & unlines
     & str
@@ -193,7 +199,7 @@ drawSolved :: Game -> Widget ()
 drawSolved game
   | completed && solved =
     str "SOLVED" & withAttr styleSolved & commonModifier
-  | completed && not solved =
+  | not solved =
     str "INCORRECT" & withAttr styleUnsolved & commonModifier
   | otherwise = emptyWidget
   where
@@ -273,25 +279,172 @@ main = do
     head' x = head x
 
 demo :: [Int]
-demo = let z = 0 in
-  [ z, 6, z, z, z, z, z, 7, 3
-  , z, 7, z, z, z, 1, 5, z, 4
-  , z, z, z, z, 7, z, 1, z, z
-  , 7, 5, z, 8, z, 6, 4, z, z
-  , 3, z, 8, 9, 1, 5, 2, z, 7
-  , z, z, 2, 7, z, 4, z, 5, 9
-  , z, z, 6, z, 9, z, z, z, z
-  , 2, z, 7, 5, z, z, z, 1, z
-  , 5, 3, z, z, z, z, z, 9, z
-  ]
+demo =
+  let z = 0
+   in [ z,
+        6,
+        z,
+        z,
+        z,
+        z,
+        z,
+        7,
+        3,
+        z,
+        7,
+        z,
+        z,
+        z,
+        1,
+        5,
+        z,
+        4,
+        z,
+        z,
+        z,
+        z,
+        7,
+        z,
+        1,
+        z,
+        z,
+        7,
+        5,
+        z,
+        8,
+        z,
+        6,
+        4,
+        z,
+        z,
+        3,
+        z,
+        8,
+        9,
+        1,
+        5,
+        2,
+        z,
+        7,
+        z,
+        z,
+        2,
+        7,
+        z,
+        4,
+        z,
+        5,
+        9,
+        z,
+        z,
+        6,
+        z,
+        9,
+        z,
+        z,
+        z,
+        z,
+        2,
+        z,
+        7,
+        5,
+        z,
+        z,
+        z,
+        1,
+        z,
+        5,
+        3,
+        z,
+        z,
+        z,
+        z,
+        z,
+        9,
+        z
+      ]
 
 simple :: [Int]
-simple = [-1,1,0,0,0,0,1,-1,1
-          ,1,1,0,0,1,2,3,2,1
-          ,1,1,1,0,1,-1,-1,2,2
-          ,1,-1,2,1,2,2,3,-1,1
-          ,1,1,2,-1,1,0,1,1,1
-          ,0,0,1,1,1,0,0,0,0
-          ,0,1,2,2,2,1,1,0,0
-          ,0,1,-1,-1,2,-1,1,0,0
-          ,0,1,2,2,2,1,1,0,0]
+simple =
+  [ -1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    -1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    2,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    -1,
+    -1,
+    2,
+    2,
+    1,
+    -1,
+    2,
+    1,
+    2,
+    2,
+    3,
+    -1,
+    1,
+    1,
+    1,
+    2,
+    -1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    -1,
+    -1,
+    2,
+    -1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    0,
+    0
+  ]
