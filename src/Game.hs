@@ -22,10 +22,10 @@ module Game
 where
 
 -- import Data.Function ((&))
+
+import Control.Lens (ix, makeLenses, (%~), (&), (.~), (^.))
 import Data.List (nub)
 import Data.List.Split (chunksOf)
-import Control.Lens (makeLenses, ix, (%~), (.~) , (&), (^.))
-
 
 data Cell
   = Given Int
@@ -118,7 +118,7 @@ moveCursor direction distance game =
     (x, y) = game ^. cursor
     h = game ^. hardness
     wrap n
-      | n >= h = n -  h-- TODO: n >= game.hardness
+      | n >= h = n - h -- TODO: n >= game.hardness
       | n < 0 = n + h
       | otherwise = n
 
@@ -153,9 +153,6 @@ clickCell x y game
   | otherwise = case cell of
     Hide 0 -> clickCell (x -1) y (clickCell (x + 1) y (clickCell x (y -1) (clickCell x (y + 1) (act0 game x y))))
     Hide (-1) -> game & isOver .~ True
-    -- game {isOver = isOver game &  %~ True }
-    -- game {isOver = isOver game & _8 .~ True }
-    -- transformCell' (\_ -> Show_bomb (-1)) game x y
     Hide n -> transformCell' (\_ -> Active n) game x y
     c -> transformCell' (const c) game x y
   where
