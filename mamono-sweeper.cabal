@@ -1,6 +1,6 @@
-name:                mine-sweeper
+name:                mamono-sweeper
 version:             0.1.0.0
-synopsis:            Command-line mine sweeper game
+synopsis:            Command-line sweeper game
 homepage:            https://github.com/jn1118/CSE-230-Final-Project
 license:             MIT
 license-file:        
@@ -12,7 +12,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-executable mine-sweeper
+executable mamono-sweeper
   hs-source-dirs:      src
   other-modules:       Game
                      , UI
