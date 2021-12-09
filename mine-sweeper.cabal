@@ -27,3 +27,4 @@ executable mine-sweeper
                      , split
                      , vty
                      , random >= 1.1
+                     , lens >= 4.19.2
