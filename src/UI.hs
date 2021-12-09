@@ -94,8 +94,6 @@ handleEvent game (VtyEvent (V.EvKey key [V.MCtrl])) =
   case key of
     -- Quit
     V.KChar 'c' -> halt game
-    -- Reset
-    V.KChar 'r' -> continue . resetGame $ game
     -- Other
     _ -> continue game
 handleEvent game (VtyEvent (V.EvKey key [V.MShift])) =
@@ -177,28 +175,32 @@ drawGrid game =
     & hBox
     & border
     & withBorderStyle unicodeBold
-    & setAvailableSize (73, 37)
+    & setAvailableSize (83, 47)
     & padRight (Pad 1)
 
 drawHelp :: Widget ()
 drawHelp =
   [ "move:    ←↓↑→",
-    "open:    d",
-    "flog:    f",
-    "undo:    ctrl + z / u",
-    "reset:   ctrl + r",
-    "quit:    ctrl + c"
+    "enter:    d",
+    "quit:    ctrl + c",
+    " ",
+    "Monster",
+    "LV1: Blue ☥",
+    "LV2: red ♙",
+    "LV3: magenta ♜",
+    "LV4: yellow ♘",
+    "LV5: Green ♕"
   ]
     & unlines
     & str
     & padLeftRight 1
     & borderWithLabel (str " Instruction ")
     & withBorderStyle unicodeRounded
-    & setAvailableSize (31, 12)
+    & setAvailableSize (45, 45)
 
 drawDebug :: Game -> Widget ()
 drawDebug game =
-  [ "cursor:    (" <> show x <> ", " <> show y <> ")",
+  [
     "HP:        " <> show (game ^. hp),
     "LV:        " <> show (game ^. lv),
     "EX:        " <> show (game ^. ex),
@@ -208,12 +210,30 @@ drawDebug game =
     & str
     & padRight Max
     & padLeftRight 1
-    & setAvailableSize (31, 6)
-    & borderWithLabel (str " Debug ")
+    & setAvailableSize (45, 6)
+    & borderWithLabel (str " Profile ")
     & withBorderStyle unicodeRounded
   where
     -- & hLimit 31
     (x, y) = _cursor game
+
+drawLogo ::Widget ()
+drawLogo =
+    [ "   *             *       )     )    )   ",
+    " (  `    (     (  `   ( /(  ( /( ( /(   ",
+    " )\\))(   )\\    )\\))(  )\\()) )\\()))\\())  ",
+    "((_)()((((_)( ((_)()\\((_)\\ ((_)\\((_)\\   ",
+    "(_()((_)\\ _ )\\(_()((_) ((_) _((_) ((_)  ",
+    "|  \\/  (_)_\\(_)  \\/  |/ _ \\| \\| |/ _ \\  ",
+     "| |\\/| |/ _ \\ | |\\/| | (_) | .` | (_) | ",
+      "|_|  |_/_/ \\_\\|_|  |_|\\___/|_|\\_|\\___/  "
+  ]
+    & unlines
+    & str
+    & padLeftRight 1
+    & borderWithLabel (str " MAMONO ")
+    & withBorderStyle unicodeRounded
+    & setAvailableSize (45, 12)
 
 drawSolved :: Game -> Widget ()
 drawSolved game
@@ -226,7 +246,7 @@ drawSolved game
     completed = gameProgress' game == 100
     solved = gameSolved' game
     commonModifier =
-      setAvailableSize (31, 3)
+      setAvailableSize (45, 3)
         . withBorderStyle unicodeRounded
         . border
         . center
@@ -239,6 +259,7 @@ drawUI game =
     <+> ( drawHelp
             <=> drawDebug game
             <=> drawSolved game
+            <=> drawLogo
         )
 
 app :: App Game e ()
@@ -275,7 +296,7 @@ fillNum n pos nums
 geneInit :: (Num a, Ord a) => Int -> IO [[a]]
 geneInit n= do
       g <- newStdGen
-      let initList = [-1 | _ <- [1..33]] ++ [-2 | _ <- [1..27]] ++ [-3 | _<- [1.. 20]] ++ [-4 | _<- [1..13]] ++ [-5 | _<- [1..6]] ++ [0 | _<-[1..(n*n-33-27-20-13-6)]]
+      let initList = [-1 | _ <- [1..16]] ++ [-2 | _ <- [1..14]] ++ [-3 | _<- [1.. 10]] ++ [-4 | _<- [1..6]] ++ [-5 | _<- [1..3]] ++ [0 | _<-[1..(n*n-16-14-10-6-3)]]
       let shuffledList = shuffle' initList (length initList) g
       let nums = chunksOf n shuffledList
       -- let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
@@ -304,9 +325,9 @@ main = do
   response <- prompt "> "
   case head' response of
     '1' -> do
-      initState <- geneInit 22
+      initState <- geneInit 16
       let state = concat initState
-      endGame <- defaultMain app (mkGame 22 10 state)
+      endGame <- defaultMain app (mkGame 16 10 state)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
