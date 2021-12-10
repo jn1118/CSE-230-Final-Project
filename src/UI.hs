@@ -109,10 +109,10 @@ handleEvent game (VtyEvent (V.EvKey key [V.MShift])) =
 handleEvent game (VtyEvent (V.EvKey key [])) =
   continue $ case key of
     -- Move by cell
-    V.KUp -> moveCursor North 1 game
-    V.KDown -> moveCursor South 1 game
-    V.KLeft -> moveCursor West 1 game
-    V.KRight -> moveCursor East 1 game
+    V.KUp -> if game ^. hp > 0 then moveCursor North 1 game else moveCursor North 0 game
+    V.KDown -> if game ^. hp > 0 then moveCursor South 1 game else moveCursor North 0 game
+    V.KLeft -> if game ^. hp > 0 then moveCursor West 1 game else moveCursor North 0 game
+    V.KRight -> if game ^. hp > 0 then moveCursor East 1 game else moveCursor North 0 game
     -- click
     V.KChar 'd' -> clickCell x y game
     --flag
@@ -273,13 +273,12 @@ drawLogo =
 
 drawSolved :: Game -> Widget ()
 drawSolved game
-  | completed && solved =
+  | solved =
     str "YOU DID IT!!" & withAttr styleSolved & commonModifier
   | game ^. hp <= 0 =
     str "FAILED!!" & withAttr styleUnsolved & commonModifier
   | otherwise = emptyWidget
   where
-    completed = gameProgress' game == 100
     solved = gameSolved' game
     commonModifier =
       setAvailableSize (45, 3)
@@ -334,7 +333,7 @@ fillNum n pos nums
 geneInit :: (Num a, Ord a) => Int -> IO [[a]]
 geneInit n = do
   g <- newStdGen
-  let initList = [-1 | _ <- [1 .. 16]] ++ [-2 | _ <- [1 .. 14]] ++ [-3 | _ <- [1 .. 10]] ++ [-4 | _ <- [1 .. 6]] ++ [-5 | _ <- [1 .. 3]] ++ [0 | _ <- [1 .. (n * n -16 -14 -10 -6 -3)]]
+  let initList = [-1 | _ <- [1 .. 24]] ++ [-2 | _ <- [1 .. 14]] ++ [-3 | _ <- [1 .. 10]] ++ [-4 | _ <- [1 .. 6]] ++ [-5 | _ <- [1 .. 3]] ++ [0 | _ <- [1 .. (n * n -24 -14 -10 -6 -3)]]
   let shuffledList = shuffle' initList (length initList) g
   let nums = chunksOf n shuffledList
   -- let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
@@ -364,7 +363,7 @@ main = do
     '1' -> do
       initState <- geneInit 16
       let state = concat initState
-      endGame <- defaultMain app (mkGame 16 10 [16, 14, 10, 6, 3] state)
+      endGame <- defaultMain app (mkGame 16 10 [24, 14, 10, 6, 3] state)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
@@ -388,7 +387,7 @@ main = do
         else putStrLn "File 'autosave.sudoku' does not exist"
     '4' -> do
       gameString <- prompt "Game string: "
-      let game = (mkGame 9 10 [16, 14, 10, 6, 3] . fmap digitToInt) gameString
+      let game = (mkGame 9 10 [24, 14, 10, 6, 3] . fmap digitToInt) gameString
       endGame <- defaultMain app game
       promptSave endGame
       saveGame "autosave.sudoku" endGame
