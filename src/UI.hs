@@ -234,6 +234,25 @@ drawDebug game =
     -- & hLimit 31
     (x, y) = _cursor game
 
+drawLeftMonster :: Game -> Widget ()
+drawLeftMonster game =
+  [ "L1 Monster Left:        " <> show ((game ^. msNum) !! 0),
+    "L2 Monster Left:        " <> show ((game ^. msNum) !! 1),
+    "L3 Monster Left:        " <> show ((game ^. msNum) !! 2),
+    "L4 Monster Left:        " <> show ((game ^. msNum) !! 3),
+    "L5 Monster Left:        " <> show ((game ^. msNum) !! 4)
+  ]
+    & unlines
+    & str
+    & padRight Max
+    & padLeftRight 1
+    & setAvailableSize (45, 6)
+    & borderWithLabel (str " Monsters left: ")
+    & withBorderStyle unicodeRounded
+  where
+    -- & hLimit 31
+    (x, y) = _cursor game
+
 drawLogo :: Widget ()
 drawLogo =
   [ "   *             *       )     )    )   ",
@@ -276,6 +295,7 @@ drawUI game =
     <+> ( drawHelp
             <=> drawDebug game
             <=> drawSolved game
+            <=> drawLeftMonster game
             <=> drawLogo
         )
 
