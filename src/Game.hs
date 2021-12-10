@@ -120,7 +120,7 @@ nextLevelList = [10, 25, 60, 100, 180, 400]
 
 handleMonster :: Int -> Int -> Game -> Game
 handleMonster x y game
-  | userLevel >= (- n) = if (experience - n) >= nextLevel then turnMonster (((game & ex .~ (experience - n)) & lv .~ (userLevel + 1)) & ne .~ (nextLevelList !! userLevel)) x y else turnMonster ((game & ex .~ (experience - n)) & (msNum . ix (- n -1)) %~ (\x -> x -1)) x y
+  | userLevel >= (- n) = if (experience - n) >= nextLevel then turnMonster ((((game & ex .~ (experience - n)) & lv .~ (userLevel + 1)) & ne .~ (nextLevelList !! userLevel)) & (msNum . ix (- n -1)) %~ (\x -> x -1)) x y else turnMonster ((game & ex .~ (experience - n)) & (msNum . ix (- n -1)) %~ (\x -> x -1)) x y
   | otherwise = if (experience - n) >= nextLevel then turnMonster (((((game & ex .~ (experience - n)) & lv .~ (userLevel + 1)) & ne .~ (nextLevelList !! userLevel)) & hp .~ (currentHP + n)) & (msNum . ix (- n -1)) %~ (\x -> x -1)) x y else turnMonster (((game & ex .~ (experience - n)) & hp .~ (currentHP + n)) & (msNum . ix (- n -1)) %~ (\x -> x -1)) x y
   where
     Hide n = (game ^. grid) !! x !! y
