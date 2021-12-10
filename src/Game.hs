@@ -194,4 +194,6 @@ gameProgress' game = round ((completed / total :: Float) * 100)
     total = fromIntegral $ (game ^. mine)
 
 gameSolved' :: Game -> Bool
-gameSolved' game = countRightFlagsGrid (game ^. grid) == game ^. mine
+gameSolved' game = monster_list !! 0 == 0 && monster_list !! 1 == 0 && monster_list !! 2 == 0 && monster_list !! 3 == 0 && monster_list !! 4 == 0
+  where
+    monster_list = game ^. msNum
