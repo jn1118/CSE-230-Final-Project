@@ -145,8 +145,6 @@ drawCell game cell =
       else case cell of
         Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x
         Active x -> withAttr styleCellGiven . str $ show x
-        -- Show_bomb _ -> withAttr styleCellGiven . str $ "Bomb!!"
-        -- Flag _ -> withAttr styleCellGiven . str $ "⚐"
         Monster x ->
           case x of
             (-1) -> withAttr styleMonsterLv1 . str $ "☥"
