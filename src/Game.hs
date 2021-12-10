@@ -10,8 +10,6 @@ module Game
     Hardness,
     mkGame,
     moveCursor,
-    flagCell,
-    gameProgress',
     gameSolved',
     clickCell,
   )
@@ -26,8 +24,6 @@ data Cell
   = Empty
   | Hide Int
   | Active Int
-  | Flag Int
-  | Show_bomb Int
   | Monster Int
   deriving (Eq, Read, Show)
 
@@ -42,8 +38,6 @@ data Game = Game
     _width :: Int,
     _hardness :: Int,
     _mine :: Int,
-    _isExplode :: Bool,
-    _isOver :: Bool,
     _hp :: Int,
     _ex :: Int,
     _lv :: Int,
@@ -76,8 +70,6 @@ mkGame h d m ms_num xs =
       _width = d, -- const
       _hardness = d, -- const
       _mine = m, -- const
-      _isExplode = False,
-      _isOver = False,
       _ex = 0,
       _hp = h,
       _lv = 1,
@@ -101,11 +93,6 @@ moveCursor direction distance game =
       | n >= h = n - h -- TODO: n >= game.hardness
       | n < 0 = n + h
       | otherwise = n
-
-transformCell :: (Cell -> Cell) -> Game -> Game
-transformCell f game = game {_grid = (game ^. grid) & ix x . ix y %~ f}
-  where
-    (x, y) = game ^. cursor
 
 transformCell' :: (Cell -> Cell) -> Game -> Int -> Int -> Game
 transformCell' f game x y = game {_grid = (game ^. grid) & ix x . ix y %~ f}
@@ -145,28 +132,6 @@ clickCell :: Int -> Int -> Game -> Game
 clickCell x y game
   | x < 0 || x > (game ^. hardness - 1) || y < 0 || y > (game ^. hardness - 1) = game
   | otherwise = handleValidCell x y game
-
--- delete
-flagCell :: Game -> Game
-flagCell = transformCell $ \case
-  Hide n -> Flag n
-  Flag n -> Hide n
-  c -> c
-
-countRightFlagsRow :: Row -> Int
-countRightFlagsRow [] = 0
-countRightFlagsRow (x : xs) = case x of
-  Flag (-1) -> 1 + countRightFlagsRow xs
-  c -> countRightFlagsRow xs
-
-countRightFlagsGrid :: Grid -> Int
-countRightFlagsGrid = foldr ((+) . countRightFlagsRow) 0
-
-gameProgress' :: Game -> Int
-gameProgress' game = round ((completed / total :: Float) * 100)
-  where
-    completed = fromIntegral $ countRightFlagsGrid (game ^. grid)
-    total = fromIntegral $ (game ^. mine)
 
 gameSolved' :: Game -> Bool
 gameSolved' game = monster_list !! 0 == 0 && monster_list !! 1 == 0 && monster_list !! 2 == 0 && monster_list !! 3 == 0 && monster_list !! 4 == 0

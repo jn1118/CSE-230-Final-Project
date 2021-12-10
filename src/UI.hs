@@ -54,11 +54,14 @@ styleCursor, styleCellGiven :: AttrName
 styleSolved, styleUnsolved :: AttrName
 styleCursor = attrName "styleCursor"
 styleCellGiven = attrName "styleCellGiven"
+
 styleSolved = attrName "styleSolved"
+
 styleUnsolved = attrName "styleUnsolved"
 
 styleHiddenBg :: AttrName
 styleHiddenBg = attrName "styleHiddenBg"
+
 styleCursorFc :: AttrName
 styleCursorFc = attrName "styleCursorFc"
 
@@ -92,7 +95,6 @@ handleEvent game (VtyEvent (V.EvKey key [V.MCtrl])) =
     V.KChar 'c' -> halt game
     -- Other
     _ -> continue game
-
 handleEvent game (VtyEvent (V.EvKey key [])) =
   continue $ case key of
     -- Move by cell
@@ -102,8 +104,6 @@ handleEvent game (VtyEvent (V.EvKey key [])) =
     V.KRight -> if game ^. hp > 0 then moveCursor East 1 game else moveCursor North 0 game
     -- click
     V.KChar 'd' -> clickCell x y game
-    --flag
-    V.KChar 'f' -> flagCell game
     -- Other
     _ -> game
   where
@@ -145,8 +145,8 @@ drawCell game cell =
       else case cell of
         Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x
         Active x -> withAttr styleCellGiven . str $ show x
-        Show_bomb _ -> withAttr styleCellGiven . str $ "Bomb!!"
-        Flag _ -> withAttr styleCellGiven . str $ "⚐"
+        -- Show_bomb _ -> withAttr styleCellGiven . str $ "Bomb!!"
+        -- Flag _ -> withAttr styleCellGiven . str $ "⚐"
         Monster x ->
           case x of
             (-1) -> withAttr styleMonsterLv1 . str $ "☥"
@@ -162,7 +162,7 @@ drawGrid game =
   _grid game
     & fmap (fmap (drawCell game)) -- render Cell
     & fmap (fmap $ hLimit 37)
-    & highlightCursor game 
+    & highlightCursor game
     & fmap (intersperse (withBorderStyle unicode hBorder))
     & fmap vBox -- [Widget]
     & intersperse (withBorderStyle unicode vBorder)
@@ -316,7 +316,7 @@ geneInit n = do
 -- >>> geneInit 22 3
 -- [[-1,1,3,3,9,-3,-4,8,3,-3,3,0,0,3,-3,-2,5,-2,3,1,1,0],[5,5,7,-3,9,-3,-4,11,6,6,3,0,0,8,10,11,-1,3,3,-1,1,0],[4,-4,7,3,6,9,9,11,-3,9,4,6,4,9,-5,6,1,1,1,2,2,1],[8,8,4,0,4,6,-2,8,-2,9,-4,9,-2,-2,8,6,1,0,0,3,-1,3],[-4,4,0,0,4,-4,7,-1,5,8,7,-3,7,4,3,-1,1,0,1,8,-2,8],[6,6,1,1,5,4,5,3,-2,2,4,4,4,1,2,2,1,0,1,-1,-4,-1],[-2,2,1,-1,3,2,4,6,6,2,1,-1,6,6,-1,3,2,1,2,13,-3,12],[2,4,3,7,-2,4,4,-4,4,0,3,8,-5,7,6,-2,7,5,-1,9,-4,7],[2,4,-2,6,-2,5,5,5,4,0,2,-2,7,6,-1,-2,8,-3,-1,7,5,4],[2,-2,4,4,2,5,-1,5,2,0,2,2,2,1,4,-1,7,5,6,-1,1,0],[7,7,7,0,1,4,-2,-2,2,0,0,0,0,0,1,1,3,-1,3,1,1,0],[6,-5,8,2,6,-1,14,8,6,0,0,0,0,0,0,0,5,-1,5,0,3,3],[9,-1,-2,7,8,-5,15,-4,9,2,0,0,3,3,4,1,5,-3,4,0,4,-3],[5,-3,-5,10,7,-2,20,-3,-2,5,3,3,3,-3,4,-1,4,3,3,0,4,-1],[4,-1,-3,11,2,4,-2,-4,9,5,-3,3,3,3,4,1,1,0,0,0,1,1],[1,7,-3,6,0,2,6,6,4,4,4,4,0,2,2,2,0,0,0,0,0,0],[1,9,9,8,0,0,0,2,2,3,-1,1,0,2,-2,2,3,3,6,3,3,0],[2,-1,-5,7,0,0,0,2,-2,4,2,4,3,5,2,2,3,-3,6,-3,3,0],[2,-1,-2,7,0,0,0,2,3,-1,1,3,-3,3,0,0,3,3,6,3,4,1],[2,4,8,6,4,0,0,0,1,2,2,5,4,4,0,0,0,0,0,0,1,-1],[1,-1,6,-4,6,2,2,2,2,7,-1,6,-1,1,0,0,0,0,0,0,1,1],[1,2,-1,5,6,-2,2,2,-2,7,-4,6,1,1,0,0,0,0,0,0,0,0]]
 
-main :: IO Game 
+main :: IO Game
 main = do
   putStr $
     unlines
