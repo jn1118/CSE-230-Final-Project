@@ -50,20 +50,15 @@ import System.Random.Shuffle (shuffle, shuffle')
 
 makeLenses ''Game
 
-styleCursor, styleCellGiven, styleCellInput, styleCellNote :: AttrName
+styleCursor, styleCellGiven :: AttrName
 styleSolved, styleUnsolved :: AttrName
 styleCursor = attrName "styleCursor"
 styleCellGiven = attrName "styleCellGiven"
-styleCellInput = attrName "styleCellInput"
-styleCellNote = attrName "styleCellNote"
-
 styleSolved = attrName "styleSolved"
-
 styleUnsolved = attrName "styleUnsolved"
 
 styleHiddenBg :: AttrName
 styleHiddenBg = attrName "styleHiddenBg"
-
 styleCursorFc :: AttrName
 styleCursorFc = attrName "styleCursorFc"
 
@@ -80,8 +75,6 @@ attributes =
     V.defAttr
     [ (styleCursor, bg V.brightWhite),
       (styleCellGiven, V.defAttr),
-      (styleCellInput, fg V.blue),
-      (styleCellNote, fg V.yellow),
       (styleSolved, fg V.green),
       (styleUnsolved, fg V.red),
       (styleHiddenBg, fg V.black),
@@ -99,13 +92,7 @@ handleEvent game (VtyEvent (V.EvKey key [V.MCtrl])) =
     V.KChar 'c' -> halt game
     -- Other
     _ -> continue game
-handleEvent game (VtyEvent (V.EvKey key [V.MShift])) =
-  continue $ case key of
-    V.KUp -> moveCursor North 3 game
-    V.KDown -> moveCursor South 3 game
-    V.KLeft -> moveCursor West 3 game
-    V.KRight -> moveCursor East 3 game
-    _ -> game
+
 handleEvent game (VtyEvent (V.EvKey key [])) =
   continue $ case key of
     -- Move by cell
@@ -156,21 +143,10 @@ drawCell game cell =
             _ -> str " "
         _ -> str " "
       else case cell of
-        Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
+        Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x
         Active x -> withAttr styleCellGiven . str $ show x
         Show_bomb _ -> withAttr styleCellGiven . str $ "Bomb!!"
         Flag _ -> withAttr styleCellGiven . str $ "⚐"
-        Given x -> withAttr styleCellGiven . str $ show x
-        Input x -> withAttr styleCellInput . str $ show x
-        Note xs ->
-          fmap str xs'
-            & chunksOf 3
-            & fmap hBox
-            & vBox
-            & withAttr styleCellNote
-          where
-            xs' = fmap f [1 .. (game ^. hardness)]
-            f x = if x `elem` xs then show x else " "
         Monster x ->
           case x of
             (-1) -> withAttr styleMonsterLv1 . str $ "☥"
@@ -186,7 +162,7 @@ drawGrid game =
   _grid game
     & fmap (fmap (drawCell game)) -- render Cell
     & fmap (fmap $ hLimit 37)
-    & highlightCursor game -- 显示被选择的位置
+    & highlightCursor game 
     & fmap (intersperse (withBorderStyle unicode hBorder))
     & fmap vBox -- [Widget]
     & intersperse (withBorderStyle unicode vBorder)
@@ -230,9 +206,6 @@ drawDebug game =
     & setAvailableSize (45, 6)
     & borderWithLabel (str " Profile ")
     & withBorderStyle unicodeRounded
-  where
-    -- & hLimit 31
-    (x, y) = _cursor game
 
 drawLeftMonster :: Game -> Widget ()
 drawLeftMonster game =
@@ -336,10 +309,6 @@ geneInit n = do
   let initList = [-1 | _ <- [1 .. 24]] ++ [-2 | _ <- [1 .. 14]] ++ [-3 | _ <- [1 .. 10]] ++ [-4 | _ <- [1 .. 6]] ++ [-5 | _ <- [1 .. 3]] ++ [0 | _ <- [1 .. (n * n -24 -14 -10 -6 -3)]]
   let shuffledList = shuffle' initList (length initList) g
   let nums = chunksOf n shuffledList
-  -- let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
-  -- let b = [(num `div` n, num `mod` n) | num <- a]
-  -- let nums = [[0 | _ <- [1..n]] | _<- [1..n]]
-  -- let nums' =  foldr fillMine nums b
   let poss = [(p, q) | p <- [0 .. (n -1)], q <- [0 .. (n -1)]]
   let nums'' = foldr (fillNum n) nums poss
   return nums''
@@ -347,51 +316,42 @@ geneInit n = do
 -- >>> geneInit 22 3
 -- [[-1,1,3,3,9,-3,-4,8,3,-3,3,0,0,3,-3,-2,5,-2,3,1,1,0],[5,5,7,-3,9,-3,-4,11,6,6,3,0,0,8,10,11,-1,3,3,-1,1,0],[4,-4,7,3,6,9,9,11,-3,9,4,6,4,9,-5,6,1,1,1,2,2,1],[8,8,4,0,4,6,-2,8,-2,9,-4,9,-2,-2,8,6,1,0,0,3,-1,3],[-4,4,0,0,4,-4,7,-1,5,8,7,-3,7,4,3,-1,1,0,1,8,-2,8],[6,6,1,1,5,4,5,3,-2,2,4,4,4,1,2,2,1,0,1,-1,-4,-1],[-2,2,1,-1,3,2,4,6,6,2,1,-1,6,6,-1,3,2,1,2,13,-3,12],[2,4,3,7,-2,4,4,-4,4,0,3,8,-5,7,6,-2,7,5,-1,9,-4,7],[2,4,-2,6,-2,5,5,5,4,0,2,-2,7,6,-1,-2,8,-3,-1,7,5,4],[2,-2,4,4,2,5,-1,5,2,0,2,2,2,1,4,-1,7,5,6,-1,1,0],[7,7,7,0,1,4,-2,-2,2,0,0,0,0,0,1,1,3,-1,3,1,1,0],[6,-5,8,2,6,-1,14,8,6,0,0,0,0,0,0,0,5,-1,5,0,3,3],[9,-1,-2,7,8,-5,15,-4,9,2,0,0,3,3,4,1,5,-3,4,0,4,-3],[5,-3,-5,10,7,-2,20,-3,-2,5,3,3,3,-3,4,-1,4,3,3,0,4,-1],[4,-1,-3,11,2,4,-2,-4,9,5,-3,3,3,3,4,1,1,0,0,0,1,1],[1,7,-3,6,0,2,6,6,4,4,4,4,0,2,2,2,0,0,0,0,0,0],[1,9,9,8,0,0,0,2,2,3,-1,1,0,2,-2,2,3,3,6,3,3,0],[2,-1,-5,7,0,0,0,2,-2,4,2,4,3,5,2,2,3,-3,6,-3,3,0],[2,-1,-2,7,0,0,0,2,3,-1,1,3,-3,3,0,0,3,3,6,3,4,1],[2,4,8,6,4,0,0,0,1,2,2,5,4,4,0,0,0,0,0,0,1,-1],[1,-1,6,-4,6,2,2,2,2,7,-1,6,-1,1,0,0,0,0,0,0,1,1],[1,2,-1,5,6,-2,2,2,-2,7,-4,6,1,1,0,0,0,0,0,0,0,0]]
 
-main :: IO ()
+main :: IO Game 
 main = do
   putStr $
     unlines
-      [ "Mine Sweeper",
-        "  1) Load demo game",
-        "  2) Load file",
-        "  3) Load autosave",
-        "  4) Load game string",
-        "  *) Quit"
+      [ "'##::::'##::::'###::::'##::::'##::'#######::'##::: ##::'#######::",
+        " ###::'###:::'## ##::: ###::'###:'##.... ##: ###:: ##:'##.... ##:",
+        " ####'####::'##:. ##:: ####'####: ##:::: ##: ####: ##: ##:::: ##:",
+        " ## ### ##:'##:::. ##: ## ### ##: ##:::: ##: ## ## ##: ##:::: ##:",
+        " ##. #: ##: #########: ##. #: ##: ##:::: ##: ##. ####: ##:::: ##:",
+        " ##:.:: ##: ##.... ##: ##:.:: ##: ##:::: ##: ##:. ###: ##:::: ##:",
+        " ##:::: ##: ##:::: ##: ##:::: ##:. #######:: ##::. ##:. #######::",
+        "..:::::..::..:::::..::..:::::..:::.......:::..::::..:::.......:::",
+        "MAMONO (monster) Sweeper -- choose difficulty",
+        "  1) EASY",
+        "  2) MEDIUM",
+        "  3) HARD",
+        "  other) MEDIUM"
       ]
   response <- prompt "> "
   case head' response of
     '1' -> do
       initState <- geneInit 16
       let state = concat initState
-      endGame <- defaultMain app (mkGame 16 10 [24, 14, 10, 6, 3] state)
-      promptSave endGame
-      saveGame "autosave.sudoku" endGame
+      defaultMain app (mkGame 20 16 10 [24, 14, 10, 6, 3] state)
     '2' -> do
-      filename <- prompt "Filename: "
-      exists <- doesFileExist filename
-      if exists
-        then do
-          game <- loadGame filename
-          endGame <- defaultMain app game
-          promptSave endGame
-          saveGame "autosave.sudoku" endGame
-        else putStrLn $ "File '" <> filename <> "' does not exist"
+      initState <- geneInit 16
+      let state = concat initState
+      defaultMain app (mkGame 10 16 10 [24, 14, 10, 6, 3] state)
     '3' -> do
-      exists <- doesFileExist "autosave.sudoku"
-      if exists
-        then do
-          game <- loadGame "autosave.sudoku"
-          endGame <- defaultMain app game
-          promptSave endGame
-          saveGame "autosave.sudoku" endGame
-        else putStrLn "File 'autosave.sudoku' does not exist"
-    '4' -> do
-      gameString <- prompt "Game string: "
-      let game = (mkGame 9 10 [24, 14, 10, 6, 3] . fmap digitToInt) gameString
-      endGame <- defaultMain app game
-      promptSave endGame
-      saveGame "autosave.sudoku" endGame
-    _ -> putStrLn "Quitting..."
+      initState <- geneInit 16
+      let state = concat initState
+      defaultMain app (mkGame 5 16 10 [24, 14, 10, 6, 3] state)
+    _ -> do
+      initState <- geneInit 16
+      let state = concat initState
+      defaultMain app (mkGame 10 16 10 [24, 14, 10, 6, 3] state)
   where
     head' [] = ' '
     head' x = head x

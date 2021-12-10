@@ -11,7 +11,6 @@ module Game
     mkGame,
     moveCursor,
     flagCell,
-    resetGame,
     gameProgress',
     gameSolved',
     clickCell,
@@ -21,14 +20,10 @@ where
 -- import Data.Function ((&))
 
 import Control.Lens (ix, makeLenses, (%~), (&), (.~), (^.))
-import Data.List (nub)
 import Data.List.Split (chunksOf)
 
 data Cell
-  = Given Int
-  | Input Int
-  | Note [Int]
-  | Empty
+  = Empty
   | Hide Int
   | Active Int
   | Flag Int
@@ -72,8 +67,8 @@ data Hardness
   | Hard --
   deriving (Read, Show)
 
-mkGame :: Int -> Int -> [Int] -> [Int] -> Game
-mkGame d m ms_num xs =
+mkGame :: Int -> Int -> Int -> [Int] -> [Int] -> Game
+mkGame h d m ms_num xs =
   Game
     { _cursor = (0, 0),
       _grid = chunksOf d $ mkCell <$> xs,
@@ -84,7 +79,7 @@ mkGame d m ms_num xs =
       _isExplode = False,
       _isOver = False,
       _ex = 0,
-      _hp = 10,
+      _hp = h,
       _lv = 1,
       _ne = 10,
       _msNum = ms_num
@@ -144,25 +139,12 @@ handleValidCell x y game = case cell of
   where
     cell = (game ^. grid) !! x !! y
     act0 = transformCell' (\(Hide n) -> Active n)
-    turnMonster = transformCell' (\(Hide n) -> Monster n)
-    userLevel = _lv game
-    nextLevel = _ne game
-    experience = _ex game
-    currentHP = _hp game
 
 -- x, y must be the cursor index
 clickCell :: Int -> Int -> Game -> Game
 clickCell x y game
   | x < 0 || x > (game ^. hardness - 1) || y < 0 || y > (game ^. hardness - 1) = game
   | otherwise = handleValidCell x y game
-  where
-    cell = (game ^. grid) !! x !! y
-    act0 = transformCell' (\(Hide n) -> Active n)
-    turnMonster = transformCell' (\(Hide n) -> Monster n)
-    userLevel = _lv game
-    nextLevel = _ne game
-    experience = _ex game
-    currentHP = _hp game
 
 -- delete
 flagCell :: Game -> Game
@@ -170,13 +152,6 @@ flagCell = transformCell $ \case
   Hide n -> Flag n
   Flag n -> Hide n
   c -> c
-
-resetGame :: Game -> Game
-resetGame game = game {_grid = fmap (fmap f) (game ^. grid)}
-  where
-    f = \case
-      Given n -> Given n
-      _ -> Empty
 
 countRightFlagsRow :: Row -> Int
 countRightFlagsRow [] = 0
