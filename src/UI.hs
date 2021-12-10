@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+
 module UI where
 
 import Brick
@@ -35,18 +36,17 @@ import Brick
 import Brick.Widgets.Border (border, borderWithLabel, hBorder, vBorder)
 import Brick.Widgets.Border.Style (unicode, unicodeBold, unicodeRounded)
 import Brick.Widgets.Center (center)
+import Control.Lens (ix, makeLenses, (%~), (&), (.~), (^.))
 import Data.Char (digitToInt)
 import Data.List (intersperse, nub)
-import System.Random (newStdGen, Random (randomRs))
-import System.Random.Shuffle (shuffle', shuffle)
-
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromMaybe)
 import FileIO
 import Game
 import qualified Graphics.Vty as V
-import Control.Lens (makeLenses,ix, (%~), (.~) , (&), (^.))
 import System.Directory (doesFileExist)
+import System.Random (Random (randomRs), newStdGen)
+import System.Random.Shuffle (shuffle, shuffle')
 
 makeLenses ''Game
 
@@ -56,20 +56,23 @@ styleCursor = attrName "styleCursor"
 styleCellGiven = attrName "styleCellGiven"
 styleCellInput = attrName "styleCellInput"
 styleCellNote = attrName "styleCellNote"
+
 styleSolved = attrName "styleSolved"
+
 styleUnsolved = attrName "styleUnsolved"
+
 styleHiddenBg :: AttrName
 styleHiddenBg = attrName "styleHiddenBg"
+
 styleCursorFc :: AttrName
 styleCursorFc = attrName "styleCursorFc"
+
 styleMonsterLv1, styleMonsterLv2, styleMonsterLv3, styleMonsterLv4, styleMonsterLv5 :: AttrName
 styleMonsterLv1 = attrName "styleMonsterLv1"
 styleMonsterLv2 = attrName "styleMonsterLv2"
 styleMonsterLv3 = attrName "styleMonsterLv3"
 styleMonsterLv4 = attrName "styleMonsterLv4"
 styleMonsterLv5 = attrName "styleMonsterLv5"
-
-
 
 attributes :: AttrMap
 attributes =
@@ -133,9 +136,24 @@ highlightCursor game widgets =
 drawCell :: Game -> Cell -> Widget ()
 drawCell game cell =
   center $
-    if _isOver game
+    if (game ^. hp <= 0)
       then case cell of
-        Hide (-1) -> withAttr styleCellGiven . str $ "Bomb!!"
+        Hide x ->
+          case x of
+            (-1) -> withAttr styleMonsterLv1 . str $ "☥"
+            (-2) -> withAttr styleMonsterLv2 . str $ "♙"
+            (-3) -> withAttr styleMonsterLv3 . str $ "♜"
+            (-4) -> withAttr styleMonsterLv4 . str $ "♘"
+            (-5) -> withAttr styleMonsterLv5 . str $ "♕"
+            _ -> str " "
+        Monster y ->
+          case y of
+            (-1) -> withAttr styleMonsterLv1 . str $ "☥"
+            (-2) -> withAttr styleMonsterLv2 . str $ "♙"
+            (-3) -> withAttr styleMonsterLv3 . str $ "♜"
+            (-4) -> withAttr styleMonsterLv4 . str $ "♘"
+            (-5) -> withAttr styleMonsterLv5 . str $ "♕"
+            _ -> str " "
         _ -> str " "
       else case cell of
         Hide _ -> withAttr styleHiddenBg . str $ "." --withAttr styleCellGiven . str $ show x 保存好自己的x但是里面具体是啥不用显示，可以表示为一个灰色方块
@@ -155,12 +173,12 @@ drawCell game cell =
             f x = if x `elem` xs then show x else " "
         Monster x ->
           case x of
-           (-1) -> withAttr styleMonsterLv1 . str $ "☥"
-           (-2) -> withAttr styleMonsterLv2 . str $ "♙"
-           (-3) -> withAttr styleMonsterLv3 . str $ "♜"
-           (-4) -> withAttr styleMonsterLv4 . str $ "♘"
-           (-5) -> withAttr styleMonsterLv5 . str $ "♕"
-           _    -> str " "
+            (-1) -> withAttr styleMonsterLv1 . str $ "☥"
+            (-2) -> withAttr styleMonsterLv2 . str $ "♙"
+            (-3) -> withAttr styleMonsterLv3 . str $ "♜"
+            (-4) -> withAttr styleMonsterLv4 . str $ "♘"
+            (-5) -> withAttr styleMonsterLv5 . str $ "♕"
+            _ -> str " "
         Empty -> str " "
 
 drawGrid :: Game -> Widget ()
@@ -200,8 +218,7 @@ drawHelp =
 
 drawDebug :: Game -> Widget ()
 drawDebug game =
-  [
-    "HP:        " <> show (game ^. hp),
+  [ "HP:        " <> show (game ^. hp),
     "LV:        " <> show (game ^. lv),
     "EX:        " <> show (game ^. ex),
     "NE:        " <> show (game ^. ne)
@@ -217,16 +234,16 @@ drawDebug game =
     -- & hLimit 31
     (x, y) = _cursor game
 
-drawLogo ::Widget ()
+drawLogo :: Widget ()
 drawLogo =
-    [ "   *             *       )     )    )   ",
+  [ "   *             *       )     )    )   ",
     " (  `    (     (  `   ( /(  ( /( ( /(   ",
     " )\\))(   )\\    )\\))(  )\\()) )\\()))\\())  ",
     "((_)()((((_)( ((_)()\\((_)\\ ((_)\\((_)\\   ",
     "(_()((_)\\ _ )\\(_()((_) ((_) _((_) ((_)  ",
     "|  \\/  (_)_\\(_)  \\/  |/ _ \\| \\| |/ _ \\  ",
-     "| |\\/| |/ _ \\ | |\\/| | (_) | .` | (_) | ",
-      "|_|  |_/_/ \\_\\|_|  |_|\\___/|_|\\_|\\___/  "
+    "| |\\/| |/ _ \\ | |\\/| | (_) | .` | (_) | ",
+    "|_|  |_/_/ \\_\\|_|  |_|\\___/|_|\\_|\\___/  "
   ]
     & unlines
     & str
@@ -238,9 +255,9 @@ drawLogo =
 drawSolved :: Game -> Widget ()
 drawSolved game
   | completed && solved =
-    str "SOLVED" & withAttr styleSolved & commonModifier
-  | completed && not solved =
-    str "INCORRECT" & withAttr styleUnsolved & commonModifier
+    str "YOU DID IT!!" & withAttr styleSolved & commonModifier
+  | game ^. hp <= 0 =
+    str "FAILED!!" & withAttr styleUnsolved & commonModifier
   | otherwise = emptyWidget
   where
     completed = gameProgress' game == 100
@@ -272,44 +289,44 @@ app =
       appAttrMap = const attributes
     }
 
-
 containBomb :: (Num p, Ord p) => [[p]] -> Int -> Int -> Int -> p
 containBomb nums x y n
- | x <0 || y < 0 || x >= n || y >=n = 0
- | nums!!x!!y < 0 = - (nums!!x!!y)
- | otherwise = 0
+  | x < 0 || y < 0 || x >= n || y >= n = 0
+  | nums !! x !! y < 0 = - (nums !! x !! y)
+  | otherwise = 0
 
 fillNum :: (Eq a, Num a, Ord a) => Int -> (Int, Int) -> [[a]] -> [[a]]
 fillNum n pos nums
-  | nums !!x!!y < 0 = nums
-  | otherwise = nums & ix x . ix y .~ (containBomb nums (x-1) (y-1) n) +
-                                            (containBomb nums (x-1) (y) n) +
-                                            (containBomb nums (x-1) (y+1) n)+
-                                            (containBomb nums (x) (y+1) n)+
-                                            (containBomb nums (x) (y-1) n)+
-                                            (containBomb nums (x+1) (y-1) n)+
-                                            (containBomb nums (x+1) (y+1) n)+
-                                            (containBomb nums (x+1) (y) n)
-  where x = fst pos
-        y = snd pos
+  | nums !! x !! y < 0 = nums
+  | otherwise =
+    nums & ix x . ix y .~ (containBomb nums (x -1) (y -1) n)
+      + (containBomb nums (x -1) (y) n)
+      + (containBomb nums (x -1) (y + 1) n)
+      + (containBomb nums (x) (y + 1) n)
+      + (containBomb nums (x) (y -1) n)
+      + (containBomb nums (x + 1) (y -1) n)
+      + (containBomb nums (x + 1) (y + 1) n)
+      + (containBomb nums (x + 1) (y) n)
+  where
+    x = fst pos
+    y = snd pos
 
 geneInit :: (Num a, Ord a) => Int -> IO [[a]]
-geneInit n= do
-      g <- newStdGen
-      let initList = [-1 | _ <- [1..16]] ++ [-2 | _ <- [1..14]] ++ [-3 | _<- [1.. 10]] ++ [-4 | _<- [1..6]] ++ [-5 | _<- [1..3]] ++ [0 | _<-[1..(n*n-16-14-10-6-3)]]
-      let shuffledList = shuffle' initList (length initList) g
-      let nums = chunksOf n shuffledList
-      -- let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
-      -- let b = [(num `div` n, num `mod` n) | num <- a]
-      -- let nums = [[0 | _ <- [1..n]] | _<- [1..n]]
-      -- let nums' =  foldr fillMine nums b
-      let poss = [(p, q) | p <- [0..(n-1)], q <- [0..(n-1)]]
-      let nums'' = foldr (fillNum n) nums poss
-      return nums''
+geneInit n = do
+  g <- newStdGen
+  let initList = [-1 | _ <- [1 .. 16]] ++ [-2 | _ <- [1 .. 14]] ++ [-3 | _ <- [1 .. 10]] ++ [-4 | _ <- [1 .. 6]] ++ [-5 | _ <- [1 .. 3]] ++ [0 | _ <- [1 .. (n * n -16 -14 -10 -6 -3)]]
+  let shuffledList = shuffle' initList (length initList) g
+  let nums = chunksOf n shuffledList
+  -- let a  = take mines . nub $ (randomRs (0,n*n-1) g :: [Int])
+  -- let b = [(num `div` n, num `mod` n) | num <- a]
+  -- let nums = [[0 | _ <- [1..n]] | _<- [1..n]]
+  -- let nums' =  foldr fillMine nums b
+  let poss = [(p, q) | p <- [0 .. (n -1)], q <- [0 .. (n -1)]]
+  let nums'' = foldr (fillNum n) nums poss
+  return nums''
 
 -- >>> geneInit 22 3
 -- [[-1,1,3,3,9,-3,-4,8,3,-3,3,0,0,3,-3,-2,5,-2,3,1,1,0],[5,5,7,-3,9,-3,-4,11,6,6,3,0,0,8,10,11,-1,3,3,-1,1,0],[4,-4,7,3,6,9,9,11,-3,9,4,6,4,9,-5,6,1,1,1,2,2,1],[8,8,4,0,4,6,-2,8,-2,9,-4,9,-2,-2,8,6,1,0,0,3,-1,3],[-4,4,0,0,4,-4,7,-1,5,8,7,-3,7,4,3,-1,1,0,1,8,-2,8],[6,6,1,1,5,4,5,3,-2,2,4,4,4,1,2,2,1,0,1,-1,-4,-1],[-2,2,1,-1,3,2,4,6,6,2,1,-1,6,6,-1,3,2,1,2,13,-3,12],[2,4,3,7,-2,4,4,-4,4,0,3,8,-5,7,6,-2,7,5,-1,9,-4,7],[2,4,-2,6,-2,5,5,5,4,0,2,-2,7,6,-1,-2,8,-3,-1,7,5,4],[2,-2,4,4,2,5,-1,5,2,0,2,2,2,1,4,-1,7,5,6,-1,1,0],[7,7,7,0,1,4,-2,-2,2,0,0,0,0,0,1,1,3,-1,3,1,1,0],[6,-5,8,2,6,-1,14,8,6,0,0,0,0,0,0,0,5,-1,5,0,3,3],[9,-1,-2,7,8,-5,15,-4,9,2,0,0,3,3,4,1,5,-3,4,0,4,-3],[5,-3,-5,10,7,-2,20,-3,-2,5,3,3,3,-3,4,-1,4,3,3,0,4,-1],[4,-1,-3,11,2,4,-2,-4,9,5,-3,3,3,3,4,1,1,0,0,0,1,1],[1,7,-3,6,0,2,6,6,4,4,4,4,0,2,2,2,0,0,0,0,0,0],[1,9,9,8,0,0,0,2,2,3,-1,1,0,2,-2,2,3,3,6,3,3,0],[2,-1,-5,7,0,0,0,2,-2,4,2,4,3,5,2,2,3,-3,6,-3,3,0],[2,-1,-2,7,0,0,0,2,3,-1,1,3,-3,3,0,0,3,3,6,3,4,1],[2,4,8,6,4,0,0,0,1,2,2,5,4,4,0,0,0,0,0,0,1,-1],[1,-1,6,-4,6,2,2,2,2,7,-1,6,-1,1,0,0,0,0,0,0,1,1],[1,2,-1,5,6,-2,2,2,-2,7,-4,6,1,1,0,0,0,0,0,0,0,0]]
-
 
 main :: IO ()
 main = do
@@ -327,7 +344,7 @@ main = do
     '1' -> do
       initState <- geneInit 16
       let state = concat initState
-      endGame <- defaultMain app (mkGame 16 10 [16,14,10,6,3] state)
+      endGame <- defaultMain app (mkGame 16 10 [16, 14, 10, 6, 3] state)
       promptSave endGame
       saveGame "autosave.sudoku" endGame
     '2' -> do
@@ -351,7 +368,7 @@ main = do
         else putStrLn "File 'autosave.sudoku' does not exist"
     '4' -> do
       gameString <- prompt "Game string: "
-      let game = (mkGame 9 10 [16,14,10,6,3] . fmap digitToInt) gameString
+      let game = (mkGame 9 10 [16, 14, 10, 6, 3] . fmap digitToInt) gameString
       endGame <- defaultMain app game
       promptSave endGame
       saveGame "autosave.sudoku" endGame
@@ -361,12 +378,86 @@ main = do
     head' x = head x
 
 simple :: [Int]
-simple = [-1,1,0,0,0,0,1,-1,1
-          ,1,1,0,0,1,2,3,2,1
-          ,1,1,1,0,1,-1,-1,2,2
-          ,1,-1,2,1,2,2,3,-1,1
-          ,1,1,2,-1,1,0,1,1,1
-          ,0,0,1,1,1,0,0,0,0
-          ,0,1,2,2,2,1,1,0,0
-          ,0,1,-1,-1,2,-1,1,0,0
-          ,0,1,2,2,2,1,1,0,0]
+simple =
+  [ -1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    -1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    2,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    -1,
+    -1,
+    2,
+    2,
+    1,
+    -1,
+    2,
+    1,
+    2,
+    2,
+    3,
+    -1,
+    1,
+    1,
+    1,
+    2,
+    -1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    -1,
+    -1,
+    2,
+    -1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    0,
+    0
+  ]
